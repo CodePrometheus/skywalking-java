@@ -18,5 +18,9 @@
 
 package org.apache.skywalking.apm.agent.core.plugin.match;
 
+/**
+ * 标志接口
+ * 表示这是一个匹配器
+ */
 public interface ClassMatch {
 }

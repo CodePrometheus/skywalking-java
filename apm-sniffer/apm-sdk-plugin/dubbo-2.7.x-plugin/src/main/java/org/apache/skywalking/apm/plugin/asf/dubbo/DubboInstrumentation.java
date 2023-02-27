@@ -45,42 +45,52 @@ public class DubboInstrumentation extends ClassInstanceMethodsEnhancePluginDefin
 
     @Override
     protected ClassMatch enhanceClass() {
-        return NameMatch.byName(ENHANCE_CLASS);
+        return NameMatch.byName(ENHANCE_CLASS); // 指定需要拦截的类
     }
 
+    /**
+     * 拿到构造方法的拦截点
+     *
+     * @return
+     */
     @Override
     public ConstructorInterceptPoint[] getConstructorsInterceptPoints() {
         return null;
     }
 
+    /**
+     * 拿到实例方法的拦截点
+     *
+     * @return
+     */
     @Override
     public InstanceMethodsInterceptPoint[] getInstanceMethodsInterceptPoints() {
-        return new InstanceMethodsInterceptPoint[] {
-            new InstanceMethodsInterceptPoint() {
-                @Override
-                public ElementMatcher<MethodDescription> getMethodsMatcher() {
-                    return named("invoke");
-                }
+        return new InstanceMethodsInterceptPoint[]{
+                new InstanceMethodsInterceptPoint() {
+                    @Override
+                    public ElementMatcher<MethodDescription> getMethodsMatcher() {
+                        return named("invoke"); // 方法匹配
+                    }
 
-                @Override
-                public String getMethodsInterceptor() {
-                    return INTERCEPT_CLASS;
-                }
+                    @Override
+                    public String getMethodsInterceptor() {
+                        return INTERCEPT_CLASS; // 拦截器定义
+                    }
 
-                @Override
-                public boolean isOverrideArgs() {
-                    return false;
+                    @Override
+                    public boolean isOverrideArgs() {
+                        return false; // 是否对入参做改变
+                    }
                 }
-            }
         };
     }
 
     @Override
     protected List<WitnessMethod> witnessMethods() {
         return Collections.singletonList(new WitnessMethod(
-            CONTEXT_TYPE_NAME,
-            named(GET_SERVER_CONTEXT_METHOD_NAME).and(
-                returns(named(CONTEXT_TYPE_NAME)))
+                CONTEXT_TYPE_NAME,
+                named(GET_SERVER_CONTEXT_METHOD_NAME).and(
+                        returns(named(CONTEXT_TYPE_NAME)))
         ));
     }
 

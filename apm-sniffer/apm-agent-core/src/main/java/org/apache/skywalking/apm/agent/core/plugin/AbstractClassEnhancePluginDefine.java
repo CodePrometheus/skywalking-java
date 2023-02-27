@@ -36,6 +36,7 @@ import java.util.List;
 
 /**
  * Basic abstract class of all sky-walking auto-instrumentation plugins.
+ * 所有插件定义的顶级父类
  * <p>
  * It provides the outline of enhancing the target class. If you want to know more about enhancing, you should go to see
  * {@link ClassEnhancePluginDefine}
@@ -58,7 +59,7 @@ public abstract class AbstractClassEnhancePluginDefine {
      * @throws PluginException when set builder failure.
      */
     public DynamicType.Builder<?> define(TypeDescription typeDescription, DynamicType.Builder<?> builder,
-        ClassLoader classLoader, EnhanceContext context) throws PluginException {
+                                         ClassLoader classLoader, EnhanceContext context) throws PluginException {
         String interceptorDefineClassName = this.getClass().getName();
         String transformClassName = typeDescription.getTypeName();
         if (StringUtil.isEmpty(transformClassName)) {
@@ -125,8 +126,8 @@ public abstract class AbstractClassEnhancePluginDefine {
      * @return new byte-buddy's builder for further manipulation.
      */
     protected abstract DynamicType.Builder<?> enhanceInstance(TypeDescription typeDescription,
-                                                     DynamicType.Builder<?> newClassBuilder, ClassLoader classLoader,
-                                                     EnhanceContext context) throws PluginException;
+                                                              DynamicType.Builder<?> newClassBuilder, ClassLoader classLoader,
+                                                              EnhanceContext context) throws PluginException;
 
     /**
      * Enhance a class to intercept class static methods.
@@ -136,7 +137,7 @@ public abstract class AbstractClassEnhancePluginDefine {
      * @return new byte-buddy's builder for further manipulation.
      */
     protected abstract DynamicType.Builder<?> enhanceClass(TypeDescription typeDescription, DynamicType.Builder<?> newClassBuilder,
-                                                  ClassLoader classLoader) throws PluginException;
+                                                           ClassLoader classLoader) throws PluginException;
 
     /**
      * Define the {@link ClassMatch} for filtering class.
@@ -154,7 +155,7 @@ public abstract class AbstractClassEnhancePluginDefine {
      * com.company.1.x.A, only in 1.0 ), and you can achieve the goal.
      */
     protected String[] witnessClasses() {
-        return new String[] {};
+        return new String[]{};
     }
 
     protected List<WitnessMethod> witnessMethods() {

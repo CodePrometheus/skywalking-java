@@ -31,6 +31,7 @@ import net.bytebuddy.matcher.ElementMatcher;
 public interface InstanceMethodsInterceptPoint {
     /**
      * class instance methods matcher.
+     * bytebuddy
      *
      * @return methods matcher
      */
