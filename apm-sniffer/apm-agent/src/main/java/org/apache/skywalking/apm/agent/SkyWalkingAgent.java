@@ -51,7 +51,7 @@ import static net.bytebuddy.matcher.ElementMatchers.*;
  * The main entrance of sky-walking agent, based on javaagent mechanism.
  */
 public class SkyWalkingAgent {
-    private static ILog LOGGER = LogManager.getLogger(SkyWalkingAgent.class);
+    private static ILog LOGGER = LogManager.getLogger(SkyWalkingAgent.class); // 默认 PATTERN
 
     /**
      * Main entrance. Use byte-buddy transform to enhance all classes, which define in plugins.
@@ -70,6 +70,7 @@ public class SkyWalkingAgent {
             SnifferConfigInitializer.initializeCoreConfig(agentArgs);
         } catch (Exception e) {
             // try to resolve a new logger, and use the new logger to write the error log here
+            // get 出新的 logger， initializeCoreConfig 的日志解析配置可能改变
             LogManager.getLogger(SkyWalkingAgent.class)
                     .error(e, "SkyWalking agent initialized failure. Shutting down.");
             return;
@@ -84,6 +85,7 @@ public class SkyWalkingAgent {
         }
 
         try {
+            // 2.加载插件
             pluginFinder = new PluginFinder(new PluginBootstrap().loadPlugins());
         } catch (AgentPackageNotFoundException ape) {
             LOGGER.error(ape, "Locate agent.jar failure. Shutting down.");

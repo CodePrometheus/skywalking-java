@@ -143,6 +143,7 @@ public class SnifferConfigInitializer {
             return;
         }
         try {
+            //  Properties -> Config.class
             ConfigInitializer.initialize(AGENT_SETTINGS, configClass);
         } catch (IllegalAccessException e) {
             LOGGER.error(e,

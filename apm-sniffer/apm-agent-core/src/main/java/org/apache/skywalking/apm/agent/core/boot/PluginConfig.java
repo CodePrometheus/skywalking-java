@@ -28,6 +28,8 @@ import java.lang.annotation.Target;
  * {@link org.apache.skywalking.apm.agent.core.conf.Config} provides the core level config, all plugins could implement
  * this interface to have the same capability about initializing config from agent.config, system properties and system
  * environment variables.
+ * <p>
+ * 让配置信息更靠近使用方
  */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
