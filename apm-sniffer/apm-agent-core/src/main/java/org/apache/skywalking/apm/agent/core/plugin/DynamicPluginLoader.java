@@ -33,6 +33,12 @@ public enum DynamicPluginLoader {
 
     INSTANCE;
 
+    /**
+     * 加载自定义的插件
+     *
+     * @param classLoader
+     * @return
+     */
     public List<AbstractClassEnhancePluginDefine> load(AgentClassLoader classLoader) {
         List<AbstractClassEnhancePluginDefine> all = new ArrayList<AbstractClassEnhancePluginDefine>();
         for (InstrumentationLoader instrumentationLoader : ServiceLoader.load(InstrumentationLoader.class, classLoader)) {

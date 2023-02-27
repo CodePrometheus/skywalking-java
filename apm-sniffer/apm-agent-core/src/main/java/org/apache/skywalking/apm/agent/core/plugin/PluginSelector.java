@@ -31,6 +31,7 @@ import static org.apache.skywalking.apm.agent.core.conf.Config.Plugin.EXCLUDE_PL
 public class PluginSelector {
     /**
      * Exclude activated plugins
+     * plugin.EXCLUDE_PLUGINS 排除一些插件
      *
      * @param pluginDefines the pluginDefines is loaded from activations directory or plugins directory
      * @return real activate plugins

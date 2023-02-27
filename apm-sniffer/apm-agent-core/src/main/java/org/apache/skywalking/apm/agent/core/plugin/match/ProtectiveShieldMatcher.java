@@ -23,6 +23,7 @@ import org.apache.skywalking.apm.agent.core.logging.api.ILog;
 import org.apache.skywalking.apm.agent.core.logging.api.LogManager;
 
 /**
+ * 包装了一层，防止出现兼容性问题，不能解析就直接忽略
  * In some cases, some frameworks and libraries use some binary codes tech too. From the community feedback, some of
  * them have compatible issues with byte-buddy core, which trigger "Can't resolve type description" exception.
  * <p>

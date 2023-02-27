@@ -18,11 +18,6 @@
 
 package org.apache.skywalking.apm.agent.core.plugin;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
 import net.bytebuddy.description.NamedElement;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.matcher.ElementMatcher;
@@ -32,6 +27,8 @@ import org.apache.skywalking.apm.agent.core.plugin.match.IndirectMatch;
 import org.apache.skywalking.apm.agent.core.plugin.match.NameMatch;
 import org.apache.skywalking.apm.agent.core.plugin.match.ProtectiveShieldMatcher;
 
+import java.util.*;
+
 import static net.bytebuddy.matcher.ElementMatchers.isInterface;
 import static net.bytebuddy.matcher.ElementMatchers.not;
 
@@ -40,11 +37,20 @@ import static net.bytebuddy.matcher.ElementMatchers.not;
  * AbstractClassEnhancePluginDefine} list.
  */
 public class PluginFinder {
-    private final Map<String, LinkedList<AbstractClassEnhancePluginDefine>> nameMatchDefine = new HashMap<String, LinkedList<AbstractClassEnhancePluginDefine>>();
-    private final List<AbstractClassEnhancePluginDefine> signatureMatchDefine = new ArrayList<AbstractClassEnhancePluginDefine>();
-    private final List<AbstractClassEnhancePluginDefine> bootstrapClassMatchDefine = new ArrayList<AbstractClassEnhancePluginDefine>();
+    /**
+     * 之所以 Map 的 value 是一个 List
+     * 是因为对于同一个类，可能有多个插件都要对其进行字节码增强
+     */
+    private final Map<String, LinkedList<AbstractClassEnhancePluginDefine>> nameMatchDefine = new HashMap<String, LinkedList<AbstractClassEnhancePluginDefine>>(); // 基于类名匹配的
+    private final List<AbstractClassEnhancePluginDefine> signatureMatchDefine = new ArrayList<AbstractClassEnhancePluginDefine>(); // 间接匹配的
+    private final List<AbstractClassEnhancePluginDefine> bootstrapClassMatchDefine = new ArrayList<AbstractClassEnhancePluginDefine>(); // 对 jdk 类库做字节码修改的插件
     private static boolean IS_PLUGIN_INIT_COMPLETED = false;
 
+    /**
+     * 迭代所有插件
+     *
+     * @param plugins
+     */
     public PluginFinder(List<AbstractClassEnhancePluginDefine> plugins) {
         for (AbstractClassEnhancePluginDefine plugin : plugins) {
             ClassMatch match = plugin.enhanceClass();
@@ -52,6 +58,8 @@ public class PluginFinder {
             if (match == null) {
                 continue;
             }
+
+            // === 分类匹配 ===
 
             if (match instanceof NameMatch) {
                 NameMatch nameMatch = (NameMatch) match;
@@ -71,6 +79,13 @@ public class PluginFinder {
         }
     }
 
+    /**
+     * 查找所有能够对指定类 class 生效的插件
+     * 直接/间接 匹配
+     *
+     * @param typeDescription
+     * @return
+     */
     public List<AbstractClassEnhancePluginDefine> find(TypeDescription typeDescription) {
         List<AbstractClassEnhancePluginDefine> matchedPlugins = new LinkedList<AbstractClassEnhancePluginDefine>();
         String typeName = typeDescription.getTypeName();
@@ -88,6 +103,11 @@ public class PluginFinder {
         return matchedPlugins;
     }
 
+    /**
+     * 拼接条件
+     *
+     * @return
+     */
     public ElementMatcher<? super TypeDescription> buildMatch() {
         ElementMatcher.Junction judge = new AbstractJunction<NamedElement>() {
             @Override
@@ -95,13 +115,14 @@ public class PluginFinder {
                 return nameMatchDefine.containsKey(target.getActualName());
             }
         };
-        judge = judge.and(not(isInterface()));
+        judge = judge.and(not(isInterface())); // 不能是接口
         for (AbstractClassEnhancePluginDefine define : signatureMatchDefine) {
             ClassMatch match = define.enhanceClass();
             if (match instanceof IndirectMatch) {
-                judge = judge.or(((IndirectMatch) match).buildJunction());
+                judge = judge.or(((IndirectMatch) match).buildJunction()); // 对条件判断用 or 连接起
             }
         }
+        // 包装一层 避免抛出异常
         return new ProtectiveShieldMatcher(judge);
     }
 

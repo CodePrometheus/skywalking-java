@@ -18,9 +18,9 @@
 
 package org.apache.skywalking.apm.agent.core.plugin;
 
-import org.apache.skywalking.apm.agent.core.plugin.exception.IllegalPluginDefineException;
 import org.apache.skywalking.apm.agent.core.logging.api.ILog;
 import org.apache.skywalking.apm.agent.core.logging.api.LogManager;
+import org.apache.skywalking.apm.agent.core.plugin.exception.IllegalPluginDefineException;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -37,21 +37,30 @@ public enum PluginCfg {
     private List<PluginDefine> pluginClassList = new ArrayList<PluginDefine>();
     private PluginSelector pluginSelector = new PluginSelector();
 
+    /**
+     * 每行每行地读配置文件
+     *
+     * @param input
+     * @throws IOException
+     */
     void load(InputStream input) throws IOException {
         try {
             BufferedReader reader = new BufferedReader(new InputStreamReader(input));
             String pluginDefine;
             while ((pluginDefine = reader.readLine()) != null) {
                 try {
+                    // 忽略注释行
                     if (pluginDefine.trim().length() == 0 || pluginDefine.startsWith("#")) {
                         continue;
                     }
+                    // kv 转化为对象 <name, defineClass>
                     PluginDefine plugin = PluginDefine.build(pluginDefine);
                     pluginClassList.add(plugin);
                 } catch (IllegalPluginDefineException e) {
                     LOGGER.error(e, "Failed to format plugin({}) define.", pluginDefine);
                 }
             }
+            // 剔除指定的不需要启动的插件
             pluginClassList = pluginSelector.select(pluginClassList);
         } finally {
             input.close();

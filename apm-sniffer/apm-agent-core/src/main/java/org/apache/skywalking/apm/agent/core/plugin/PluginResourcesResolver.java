@@ -33,6 +33,7 @@ import org.apache.skywalking.apm.agent.core.plugin.loader.AgentClassLoader;
 public class PluginResourcesResolver {
     private static final ILog LOGGER = LogManager.getLogger(PluginResourcesResolver.class);
 
+    // resource 下的插件配置
     public List<URL> getResources() {
         List<URL> cfgUrlPaths = new ArrayList<URL>();
         Enumeration<URL> urls;
