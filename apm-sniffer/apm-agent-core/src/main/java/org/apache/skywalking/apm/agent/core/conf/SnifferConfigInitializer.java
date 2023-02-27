@@ -18,21 +18,6 @@
 
 package org.apache.skywalking.apm.agent.core.conf;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Enumeration;
-import java.util.jar.Attributes;
-import java.util.jar.JarFile;
-import java.util.jar.Manifest;
 import org.apache.skywalking.apm.agent.core.boot.AgentPackageNotFoundException;
 import org.apache.skywalking.apm.agent.core.boot.AgentPackagePath;
 import org.apache.skywalking.apm.agent.core.logging.api.ILog;
@@ -42,6 +27,14 @@ import org.apache.skywalking.apm.agent.core.logging.core.PatternLogResolver;
 import org.apache.skywalking.apm.util.ConfigInitializer;
 import org.apache.skywalking.apm.util.PropertyPlaceholderHelper;
 import org.apache.skywalking.apm.util.StringUtil;
+
+import java.io.*;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.jar.Attributes;
+import java.util.jar.JarFile;
+import java.util.jar.Manifest;
 
 import static org.apache.skywalking.apm.agent.core.conf.Constants.SERVICE_NAME_PART_CONNECTOR;
 
@@ -73,6 +66,7 @@ public class SnifferConfigInitializer {
             AGENT_SETTINGS.load(configFileStream);
             for (String key : AGENT_SETTINGS.stringPropertyNames()) {
                 String value = (String) AGENT_SETTINGS.get(key);
+                // replace ${} with system properties 替换占位符
                 AGENT_SETTINGS.put(key, PropertyPlaceholderHelper.INSTANCE.replacePlaceholders(value, AGENT_SETTINGS));
             }
 
@@ -81,11 +75,13 @@ public class SnifferConfigInitializer {
         }
 
         try {
+            // 环境变量优先级更高
             overrideConfigBySystemProp();
         } catch (Exception e) {
             LOGGER.error(e, "Failed to read the system properties.");
         }
 
+        // 参数 agentArgs 解析
         agentOptions = StringUtil.trim(agentOptions, ',');
         if (!StringUtil.isEmpty(agentOptions)) {
             try {
@@ -98,36 +94,41 @@ public class SnifferConfigInitializer {
             }
         }
 
+        // 将 Properties 配置都转化到 Config 类中
         initializeConfig(Config.class);
-        // reconfigure logger after config initialization
-        configureLogger();
+        // reconfigure logger after config initialization 重新配置日志
+        configureLogger(); // 重新指定日志解析器
         LOGGER = LogManager.getLogger(SnifferConfigInitializer.class);
 
-        setAgentVersion();
+        setAgentVersion(); // set Config.Agent.VERSION
 
+        // agent 名称不能为空
         if (StringUtil.isEmpty(Config.Agent.SERVICE_NAME)) {
             throw new ExceptionInInitializerError("`agent.service_name` is missing.");
         } else {
             if (StringUtil.isNotEmpty(Config.Agent.NAMESPACE) || StringUtil.isNotEmpty(Config.Agent.CLUSTER)) {
                 Config.Agent.SERVICE_NAME = StringUtil.join(
-                    SERVICE_NAME_PART_CONNECTOR,
-                    Config.Agent.SERVICE_NAME,
-                    Config.Agent.NAMESPACE,
-                    Config.Agent.CLUSTER
+                        SERVICE_NAME_PART_CONNECTOR,
+                        Config.Agent.SERVICE_NAME,
+                        Config.Agent.NAMESPACE,
+                        Config.Agent.CLUSTER
                 );
             }
         }
+        // 后端地址 不能为空
         if (StringUtil.isEmpty(Config.Collector.BACKEND_SERVICE)) {
             throw new ExceptionInInitializerError("`collector.backend_service` is missing.");
         }
+        // 容错
         if (Config.Plugin.PEER_MAX_LENGTH <= 3) {
             LOGGER.warn(
-                "PEER_MAX_LENGTH configuration:{} error, the default value of 200 will be used.",
-                Config.Plugin.PEER_MAX_LENGTH
+                    "PEER_MAX_LENGTH configuration:{} error, the default value of 200 will be used.",
+                    Config.Plugin.PEER_MAX_LENGTH
             );
             Config.Plugin.PEER_MAX_LENGTH = 200;
         }
 
+        // 初始化配置完成
         IS_INIT_COMPLETED = true;
     }
 
@@ -145,9 +146,9 @@ public class SnifferConfigInitializer {
             ConfigInitializer.initialize(AGENT_SETTINGS, configClass);
         } catch (IllegalAccessException e) {
             LOGGER.error(e,
-                         "Failed to set the agent settings {}"
-                             + " to Config={} ",
-                         AGENT_SETTINGS, configClass
+                    "Failed to set the agent settings {}"
+                            + " to Config={} ",
+                    AGENT_SETTINGS, configClass
             );
         }
     }
@@ -243,9 +244,11 @@ public class SnifferConfigInitializer {
      * @return the config file {@link InputStream}, or null if not needEnhance.
      */
     private static InputStreamReader loadConfig() throws AgentPackageNotFoundException, ConfigNotFoundException {
+        // 配置文件加载
         String specifiedConfigPath = System.getProperty(SPECIFIED_CONFIG_PATH);
+        // 无则加载默认配置
         File configFile = StringUtil.isEmpty(specifiedConfigPath) ? new File(
-            AgentPackagePath.getPath(), DEFAULT_CONFIG_FILE_NAME) : new File(specifiedConfigPath);
+                AgentPackagePath.getPath(), DEFAULT_CONFIG_FILE_NAME) : new File(specifiedConfigPath);
 
         if (configFile.exists() && configFile.isFile()) {
             try {
@@ -259,6 +262,11 @@ public class SnifferConfigInitializer {
         throw new ConfigNotFoundException("Failed to load agent.config.");
     }
 
+    /**
+     * 为什么要在配置一遍 log ?
+     * 默认 PATTERN，如果是 JSON 则使用 JsonLogResolver
+     * 故在配置文件解析完成后再配置一遍
+     */
     static void configureLogger() {
         switch (Config.Logging.RESOLVER) {
             case JSON:

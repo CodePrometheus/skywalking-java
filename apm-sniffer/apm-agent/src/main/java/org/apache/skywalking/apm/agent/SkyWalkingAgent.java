@@ -18,11 +18,6 @@
 
 package org.apache.skywalking.apm.agent;
 
-import java.lang.instrument.Instrumentation;
-import java.security.ProtectionDomain;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.agent.builder.AgentBuilder;
 import net.bytebuddy.description.NamedElement;
@@ -39,19 +34,18 @@ import org.apache.skywalking.apm.agent.core.conf.SnifferConfigInitializer;
 import org.apache.skywalking.apm.agent.core.jvm.LoadedLibraryCollector;
 import org.apache.skywalking.apm.agent.core.logging.api.ILog;
 import org.apache.skywalking.apm.agent.core.logging.api.LogManager;
-import org.apache.skywalking.apm.agent.core.plugin.AbstractClassEnhancePluginDefine;
-import org.apache.skywalking.apm.agent.core.plugin.EnhanceContext;
-import org.apache.skywalking.apm.agent.core.plugin.InstrumentDebuggingClass;
-import org.apache.skywalking.apm.agent.core.plugin.PluginBootstrap;
-import org.apache.skywalking.apm.agent.core.plugin.PluginException;
-import org.apache.skywalking.apm.agent.core.plugin.PluginFinder;
+import org.apache.skywalking.apm.agent.core.plugin.*;
 import org.apache.skywalking.apm.agent.core.plugin.bootstrap.BootstrapInstrumentBoost;
 import org.apache.skywalking.apm.agent.core.plugin.bytebuddy.CacheableTransformerDecorator;
 import org.apache.skywalking.apm.agent.core.plugin.jdk9module.JDK9ModuleExporter;
 
-import static net.bytebuddy.matcher.ElementMatchers.nameContains;
-import static net.bytebuddy.matcher.ElementMatchers.nameStartsWith;
-import static net.bytebuddy.matcher.ElementMatchers.not;
+import java.lang.instrument.Instrumentation;
+import java.security.ProtectionDomain;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+import static net.bytebuddy.matcher.ElementMatchers.*;
 
 /**
  * The main entrance of sky-walking agent, based on javaagent mechanism.
@@ -61,15 +55,23 @@ public class SkyWalkingAgent {
 
     /**
      * Main entrance. Use byte-buddy transform to enhance all classes, which define in plugins.
+     * 静态挂载
+     * 1.初始化配置
+     * 2.加载插件
+     * 3.定制化 agent 行为
+     * 4.启动服务
+     * 5.注册关闭钩子
      */
     public static void premain(String agentArgs, Instrumentation instrumentation) throws PluginException {
         final PluginFinder pluginFinder;
         try {
+            // 1.初始化配置
+            // 优先级 agent 参数 > 系统环境遍历 > /config/agent.config
             SnifferConfigInitializer.initializeCoreConfig(agentArgs);
         } catch (Exception e) {
             // try to resolve a new logger, and use the new logger to write the error log here
             LogManager.getLogger(SkyWalkingAgent.class)
-                      .error(e, "SkyWalking agent initialized failure. Shutting down.");
+                    .error(e, "SkyWalking agent initialized failure. Shutting down.");
             return;
         } finally {
             // refresh logger again after initialization finishes
@@ -94,15 +96,15 @@ public class SkyWalkingAgent {
         final ByteBuddy byteBuddy = new ByteBuddy().with(TypeValidation.of(Config.Agent.IS_OPEN_DEBUGGING_CLASS));
 
         AgentBuilder agentBuilder = new AgentBuilder.Default(byteBuddy).ignore(
-            nameStartsWith("net.bytebuddy.")
-                .or(nameStartsWith("org.slf4j."))
-                .or(nameStartsWith("org.groovy."))
-                .or(nameContains("javassist"))
-                .or(nameContains(".asm."))
-                .or(nameContains(".reflectasm."))
-                .or(nameStartsWith("sun.reflect"))
-                .or(allSkyWalkingAgentExcludeToolkit())
-                .or(ElementMatchers.isSynthetic()));
+                nameStartsWith("net.bytebuddy.")
+                        .or(nameStartsWith("org.slf4j."))
+                        .or(nameStartsWith("org.groovy."))
+                        .or(nameContains("javassist"))
+                        .or(nameContains(".asm."))
+                        .or(nameContains(".reflectasm."))
+                        .or(nameStartsWith("sun.reflect"))
+                        .or(allSkyWalkingAgentExcludeToolkit())
+                        .or(ElementMatchers.isSynthetic()));
 
         JDK9ModuleExporter.EdgeClasses edgeClasses = new JDK9ModuleExporter.EdgeClasses();
         try {
@@ -129,11 +131,11 @@ public class SkyWalkingAgent {
         }
 
         agentBuilder.type(pluginFinder.buildMatch())
-                    .transform(new Transformer(pluginFinder))
-                    .with(AgentBuilder.RedefinitionStrategy.RETRANSFORMATION)
-                    .with(new RedefinitionListener())
-                    .with(new Listener())
-                    .installOn(instrumentation);
+                .transform(new Transformer(pluginFinder))
+                .with(AgentBuilder.RedefinitionStrategy.RETRANSFORMATION)
+                .with(new RedefinitionListener())
+                .with(new Listener())
+                .installOn(instrumentation);
 
         PluginFinder.pluginInitCompleted();
 
@@ -144,7 +146,7 @@ public class SkyWalkingAgent {
         }
 
         Runtime.getRuntime()
-               .addShutdownHook(new Thread(ServiceManager.INSTANCE::shutdown, "skywalking service shutdown thread"));
+                .addShutdownHook(new Thread(ServiceManager.INSTANCE::shutdown, "skywalking service shutdown thread"));
     }
 
     private static class Transformer implements AgentBuilder.Transformer {
@@ -167,7 +169,7 @@ public class SkyWalkingAgent {
                 EnhanceContext context = new EnhanceContext();
                 for (AbstractClassEnhancePluginDefine define : pluginDefines) {
                     DynamicType.Builder<?> possibleNewBuilder = define.define(
-                        typeDescription, newBuilder, classLoader, context);
+                            typeDescription, newBuilder, classLoader, context);
                     if (possibleNewBuilder != null) {
                         newBuilder = possibleNewBuilder;
                     }

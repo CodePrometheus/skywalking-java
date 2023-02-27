@@ -30,6 +30,7 @@ import org.apache.skywalking.apm.util.Length;
 
 /**
  * This is the core config in sniffer agent.
+ * 所有的配置项
  */
 public class Config {
 
