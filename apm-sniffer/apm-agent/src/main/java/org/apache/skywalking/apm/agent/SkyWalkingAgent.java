@@ -153,11 +153,13 @@ public class SkyWalkingAgent {
         PluginFinder.pluginInitCompleted();
 
         try {
+            // 组织起所有服务
             ServiceManager.INSTANCE.boot();
         } catch (Exception e) {
             LOGGER.error(e, "Skywalking agent boot failure.");
         }
 
+        // 按优先级倒序关闭
         Runtime.getRuntime()
                 .addShutdownHook(new Thread(ServiceManager.INSTANCE::shutdown, "skywalking service shutdown thread"));
     }

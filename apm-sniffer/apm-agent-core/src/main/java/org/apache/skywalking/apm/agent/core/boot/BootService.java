@@ -19,6 +19,8 @@
 package org.apache.skywalking.apm.agent.core.boot;
 
 /**
+ * 一个服务的整个生命周期
+ * <p>
  * The <code>BootService</code> is an interface to all remote, which need to boot when plugin mechanism begins to work.
  * {@link #boot()} will be called when <code>BootService</code> start up.
  */
@@ -32,6 +34,7 @@ public interface BootService {
     void shutdown() throws Throwable;
 
     /**
+     * 优先级
      * {@code BootService}s with higher priorities will be started earlier, and shut down later than those {@code BootService}s with lower priorities.
      *
      * @return the priority of this {@code BootService}.
