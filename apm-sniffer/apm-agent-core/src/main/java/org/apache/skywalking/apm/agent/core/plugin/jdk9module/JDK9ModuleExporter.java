@@ -44,6 +44,7 @@ public class JDK9ModuleExporter {
         };
 
     /**
+     * 确保所有的模块能被读取，不受 Java9 之后模块化的影响
      * Assures that all modules of the supplied types are read by the module of any instrumented type. JDK Module system
      * was introduced since JDK9.
      * <p>
@@ -51,6 +52,7 @@ public class JDK9ModuleExporter {
      */
     public static AgentBuilder openReadEdge(Instrumentation instrumentation, AgentBuilder agentBuilder,
         EdgeClasses classes) {
+        // EdgeClasses
         for (String className : classes.classes) {
             try {
                 agentBuilder = agentBuilder.assureReadEdgeFromAndTo(instrumentation, Class.forName(className));

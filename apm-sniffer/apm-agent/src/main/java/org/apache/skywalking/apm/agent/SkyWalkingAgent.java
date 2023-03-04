@@ -95,21 +95,28 @@ public class SkyWalkingAgent {
             return;
         }
 
+        // 3.定制化 agent
         final ByteBuddy byteBuddy = new ByteBuddy().with(TypeValidation.of(Config.Agent.IS_OPEN_DEBUGGING_CLASS));
 
-        AgentBuilder agentBuilder = new AgentBuilder.Default(byteBuddy).ignore(
-                nameStartsWith("net.bytebuddy.")
-                        .or(nameStartsWith("org.slf4j."))
-                        .or(nameStartsWith("org.groovy."))
-                        .or(nameContains("javassist"))
-                        .or(nameContains(".asm."))
-                        .or(nameContains(".reflectasm."))
-                        .or(nameStartsWith("sun.reflect"))
-                        .or(allSkyWalkingAgentExcludeToolkit())
-                        .or(ElementMatchers.isSynthetic()));
+        // 建造者模式
+        // 忽略这些类
+        AgentBuilder agentBuilder = new AgentBuilder.Default(byteBuddy).ignore
+                (
+                        nameStartsWith("net.bytebuddy.")
+                                .or(nameStartsWith("org.slf4j."))
+                                .or(nameStartsWith("org.groovy."))
+                                .or(nameContains("javassist"))
+                                .or(nameContains(".asm."))
+                                .or(nameContains(".reflectasm."))
+                                .or(nameStartsWith("sun.reflect"))
+                                .or(allSkyWalkingAgentExcludeToolkit())
+                                .or(ElementMatchers.isSynthetic())
+                );
 
         JDK9ModuleExporter.EdgeClasses edgeClasses = new JDK9ModuleExporter.EdgeClasses();
         try {
+            // 将 edgeClasses 注入到 BootstrapInstrumentBoost
+            // 将必要的类注入到 BootstrapClassLoader 中
             agentBuilder = BootstrapInstrumentBoost.inject(pluginFinder, instrumentation, agentBuilder, edgeClasses);
         } catch (Exception e) {
             LOGGER.error(e, "SkyWalking agent inject bootstrap instrumentation failure. Shutting down.");
@@ -117,12 +124,16 @@ public class SkyWalkingAgent {
         }
 
         try {
+            // 打开读边界
+            // jdk9 模块化，rt.jar 拆分成许多模块，指定需要的加载，加快启动速度缩小jre大小，走向快速部署和容器化
+            // openReadEdge 解决 JDK 模块系统的跨模块类访问
             agentBuilder = JDK9ModuleExporter.openReadEdge(instrumentation, agentBuilder, edgeClasses);
         } catch (Exception e) {
             LOGGER.error(e, "SkyWalking agent open read edge in JDK 9+ failure. Shutting down.");
             return;
         }
 
+        // 根据配置决定是否将修改后的字节码保存一份到磁盘/内存上
         if (Config.Agent.IS_CACHE_ENHANCED_CLASS) {
             try {
                 agentBuilder = agentBuilder.with(new CacheableTransformerDecorator(Config.Agent.CLASS_CACHE_MODE));
@@ -132,12 +143,12 @@ public class SkyWalkingAgent {
             }
         }
 
-        agentBuilder.type(pluginFinder.buildMatch())
-                .transform(new Transformer(pluginFinder))
-                .with(AgentBuilder.RedefinitionStrategy.RETRANSFORMATION)
-                .with(new RedefinitionListener())
-                .with(new Listener())
-                .installOn(instrumentation);
+        agentBuilder.type(pluginFinder.buildMatch()) // 指定 ByteBuddy 要拦截的类
+                .transform(new Transformer(pluginFinder)) // 拦截后字节码增强落地逻辑执行器
+                .with(AgentBuilder.RedefinitionStrategy.RETRANSFORMATION) // retransformation 保留修改前的内容，如修改方法名$001保留 | redefine 覆盖
+                .with(new RedefinitionListener()) // implements AgentBuilder.RedefinitionStrategy.Listener
+                .with(new Listener()) // implements AgentBuilder.Listener
+                .installOn(instrumentation); // 定制出来的agent安装到 instrumentation
 
         PluginFinder.pluginInitCompleted();
 
