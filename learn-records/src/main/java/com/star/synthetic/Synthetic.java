@@ -1,4 +1,4 @@
-package com.star;
+package com.star.synthetic;
 
 import org.junit.Test;
 
@@ -19,6 +19,7 @@ public class Synthetic {
      * JLS: 所有存在于字节码文件中，但是不存在于源代码文件中的构造，都应该被 Synthetic 标注
      * 构造 => Constructs => Field, Method, Constructor
      * 相当于 JS 里的 var that = this;
+     * JDK11 之后，access$ 已不需要
      */
 
     private String field1 = "1";
