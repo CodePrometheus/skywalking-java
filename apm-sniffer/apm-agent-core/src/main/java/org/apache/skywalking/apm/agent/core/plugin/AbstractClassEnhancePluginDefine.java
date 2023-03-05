@@ -51,6 +51,7 @@ public abstract class AbstractClassEnhancePluginDefine {
 
     /**
      * Main entrance of enhancing the class.
+     * 增强类的主要入口
      *
      * @param typeDescription target class description.
      * @param builder         byte-buddy's builder to manipulate target class's bytecode.
@@ -77,6 +78,7 @@ public abstract class AbstractClassEnhancePluginDefine {
             for (String witnessClass : witnessClasses) {
                 if (!finder.exist(witnessClass, classLoader)) {
                     LOGGER.warn("enhance class {} by plugin {} is not activated. Witness class {} does not exist.", transformClassName, interceptorDefineClassName, witnessClass);
+                    // builder = null;
                     return null;
                 }
             }
@@ -91,11 +93,14 @@ public abstract class AbstractClassEnhancePluginDefine {
             }
         }
 
+        // 进入此说明 插件可用
+
         /**
          * find origin class source code for interceptor
          */
         DynamicType.Builder<?> newClassBuilder = this.enhance(typeDescription, builder, classLoader, context);
 
+        // EnhanceContext 状态机设置为 已经增强
         context.initializationStageCompleted();
         LOGGER.debug("enhance class {} by {} completely.", transformClassName, interceptorDefineClassName);
 

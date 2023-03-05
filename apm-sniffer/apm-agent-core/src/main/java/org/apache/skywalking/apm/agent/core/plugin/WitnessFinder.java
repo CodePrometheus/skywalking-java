@@ -24,6 +24,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * witnessClasses 在指定类加载器下查找指定的类型，如果有多个类型则必须同时存在
+ * witnessMethods 在指定的类下查找指定的方法，如果有多个方法则必须同时存在
+ * <p>
  * The <code>WitnessFinder</code> represents a pool of {@link TypePool}s, each {@link TypePool} matches a {@link
  * ClassLoader}, which helps to find the class declaration existed or not.
  */
@@ -43,12 +46,14 @@ public enum WitnessFinder {
 
     /**
      * get TypePool.Resolution of the witness class
+     *
      * @param witnessClass class name
-     * @param classLoader classLoader for finding the witnessClass
+     * @param classLoader  classLoader for finding the witnessClass
      * @return TypePool.Resolution
      */
     private TypePool.Resolution getResolution(String witnessClass, ClassLoader classLoader) {
         ClassLoader mappingKey = classLoader == null ? NullClassLoader.INSTANCE : classLoader;
+        // 之前是否保存在类型池
         if (!poolMap.containsKey(mappingKey)) {
             synchronized (poolMap) {
                 if (!poolMap.containsKey(mappingKey)) {
@@ -58,6 +63,7 @@ public enum WitnessFinder {
             }
         }
         TypePool typePool = poolMap.get(mappingKey);
+        // find()
         return typePool.describe(witnessClass);
     }
 

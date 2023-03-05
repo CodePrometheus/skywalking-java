@@ -20,6 +20,7 @@ package org.apache.skywalking.apm.agent.core.jvm;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+
 import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.net.URL;
@@ -32,6 +33,7 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import org.apache.skywalking.apm.agent.core.logging.api.ILog;
 import org.apache.skywalking.apm.agent.core.logging.api.LogManager;
 import org.apache.skywalking.apm.agent.core.util.CollectionUtil;
@@ -40,15 +42,16 @@ import org.apache.skywalking.apm.network.common.v3.KeyStringValuePair;
 public class LoadedLibraryCollector {
 
     private static final ILog LOGGER = LogManager.getLogger(LoadedLibraryCollector.class);
-    private static final  String JAR_SEPARATOR = "!";
+    private static final String JAR_SEPARATOR = "!";
     private static Set<ClassLoader> CURRENT_URL_CLASSLOADER_SET = new HashSet<>();
     private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().create();
     /**
-     * Prevent OOM in special scenes
+     * Prevent OOM in special scenes 避免 OOM
      */
     private static int CURRENT_URL_CLASSLOADER_SET_MAX_SIZE = 50;
 
     public static void registerURLClassLoader(ClassLoader classLoader) {
+        // 只有 URLClassLoader 能访问到
         if (CURRENT_URL_CLASSLOADER_SET.size() < CURRENT_URL_CLASSLOADER_SET_MAX_SIZE && classLoader instanceof URLClassLoader) {
             CURRENT_URL_CLASSLOADER_SET.add(classLoader);
         }
@@ -56,12 +59,13 @@ public class LoadedLibraryCollector {
 
     /**
      * Build the required JVM information to add to the instance properties
+     * 构造 JVM 信息
      */
     public static List<KeyStringValuePair> buildJVMInfo() {
         List<KeyStringValuePair> jvmInfo = new ArrayList<>();
         jvmInfo.add(KeyStringValuePair.newBuilder().setKey("Start Time").setValue(getVmStartTime()).build());
         jvmInfo.add(KeyStringValuePair.newBuilder().setKey("JVM Arguments").setValue(GSON.toJson(getVmArgs())).build());
-        List<String> libJarNames = getLibJarNames();
+        List<String> libJarNames = getLibJarNames(); // 所有依赖的 jar 包
         jvmInfo.add(KeyStringValuePair.newBuilder().setKey("Jar Dependencies").setValue(GSON.toJson(libJarNames)).build());
         return jvmInfo;
     }

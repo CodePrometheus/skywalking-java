@@ -82,8 +82,10 @@ public class PluginFinder {
     /**
      * 查找所有能够对指定类 class 生效的插件
      * 直接/间接 匹配
+     * 1. 从命名插件里找
+     * 2. 从间接匹配插件里找
      *
-     * @param typeDescription
+     * @param typeDescription 当做是 class
      * @return
      */
     public List<AbstractClassEnhancePluginDefine> find(TypeDescription typeDescription) {

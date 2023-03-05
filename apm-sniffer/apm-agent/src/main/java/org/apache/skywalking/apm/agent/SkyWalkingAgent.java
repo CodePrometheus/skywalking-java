@@ -144,7 +144,7 @@ public class SkyWalkingAgent {
         }
 
         agentBuilder.type(pluginFinder.buildMatch()) // 指定 ByteBuddy 要拦截的类
-                .transform(new Transformer(pluginFinder)) // 拦截后字节码增强落地逻辑执行器
+                .transform(new Transformer(pluginFinder)) // 拦截后字节码增强落地逻辑执行器、插桩、字节码增强
                 .with(AgentBuilder.RedefinitionStrategy.RETRANSFORMATION) // retransformation 保留修改前的内容，如修改方法名$001保留 | redefine 覆盖
                 .with(new RedefinitionListener()) // implements AgentBuilder.RedefinitionStrategy.Listener
                 .with(new Listener()) // implements AgentBuilder.Listener
@@ -172,32 +172,34 @@ public class SkyWalkingAgent {
         }
 
         @Override
-        public DynamicType.Builder<?> transform(final DynamicType.Builder<?> builder,
-                                                final TypeDescription typeDescription,
-                                                final ClassLoader classLoader,
-                                                final JavaModule javaModule,
+        public DynamicType.Builder<?> transform(final DynamicType.Builder<?> builder, // 当前拦截到的类的字节码
+                                                final TypeDescription typeDescription, // 简单当成了 Class，包含了类的描述信息
+                                                final ClassLoader classLoader, // 加载 当前拦截到的类 的类加载器
+                                                final JavaModule javaModule, // Java9
                                                 final ProtectionDomain protectionDomain) {
             LoadedLibraryCollector.registerURLClassLoader(classLoader);
-            List<AbstractClassEnhancePluginDefine> pluginDefines = pluginFinder.find(typeDescription);
+            List<AbstractClassEnhancePluginDefine> pluginDefines = pluginFinder.find(typeDescription); // 对拦截到的类 生效的所有插件
             if (pluginDefines.size() > 0) {
                 DynamicType.Builder<?> newBuilder = builder;
-                EnhanceContext context = new EnhanceContext();
+                EnhanceContext context = new EnhanceContext(); // 状态机记录
                 for (AbstractClassEnhancePluginDefine define : pluginDefines) {
+                    // 核心调用 define，返回一个可能为新的 builder
                     DynamicType.Builder<?> possibleNewBuilder = define.define(
                             typeDescription, newBuilder, classLoader, context);
                     if (possibleNewBuilder != null) {
                         newBuilder = possibleNewBuilder;
                     }
                 }
+                // 确认已经被修改
                 if (context.isEnhanced()) {
                     LOGGER.debug("Finish the prepare stage for {}.", typeDescription.getName());
                 }
 
-                return newBuilder;
+                return newBuilder; // 被所有可用插件修改完之后的最终字节码
             }
 
             LOGGER.debug("Matched class {}, but ignore by finding mechanism.", typeDescription.getTypeName());
-            return builder;
+            return builder; // 没有生效的，返回该类的原生字节码
         }
     }
 
