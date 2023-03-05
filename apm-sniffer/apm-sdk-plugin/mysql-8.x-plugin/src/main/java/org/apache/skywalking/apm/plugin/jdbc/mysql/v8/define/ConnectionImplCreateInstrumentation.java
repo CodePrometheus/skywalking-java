@@ -18,11 +18,14 @@
 
 package org.apache.skywalking.apm.plugin.jdbc.mysql.v8.define;
 
+import com.mysql.cj.conf.HostInfo;
+import com.mysql.cj.jdbc.ConnectionImpl;
 import net.bytebuddy.description.method.MethodDescription;
 import net.bytebuddy.matcher.ElementMatcher;
 import org.apache.skywalking.apm.agent.core.plugin.interceptor.StaticMethodsInterceptPoint;
 import org.apache.skywalking.apm.agent.core.plugin.match.ClassMatch;
 
+import java.sql.SQLException;
 import java.util.Properties;
 
 import static net.bytebuddy.matcher.ElementMatchers.named;
@@ -34,29 +37,49 @@ import static org.apache.skywalking.apm.agent.core.plugin.match.NameMatch.byName
  */
 public class ConnectionImplCreateInstrumentation extends AbstractMysqlInstrumentation {
 
+    /**
+     * ConnectionImpl 下的 getInstance 方法
+     * Creates a connection instance.
+     *
+     * @param hostInfo
+     * {@link HostInfo} instance
+     * @return new {@link ConnectionImpl} instance
+     * @throws SQLException
+     * if a database access error occurs
+     * <p>
+     * public static JdbcConnection getInstance(HostInfo hostInfo) throws SQLException {
+     * return new ConnectionImpl(hostInfo);
+     * }
+     */
+
     private static final String JDBC_ENHANCE_CLASS = "com.mysql.cj.jdbc.ConnectionImpl";
 
     private static final String CONNECT_METHOD = "getInstance";
 
+    /**
+     * 静态拦截点
+     *
+     * @return
+     */
     @Override
     public StaticMethodsInterceptPoint[] getStaticMethodsInterceptPoints() {
-        return new StaticMethodsInterceptPoint[] {
-            new StaticMethodsInterceptPoint() {
-                @Override
-                public ElementMatcher<MethodDescription> getMethodsMatcher() {
-                    return named(CONNECT_METHOD);
-                }
+        return new StaticMethodsInterceptPoint[]{
+                new StaticMethodsInterceptPoint() {
+                    @Override
+                    public ElementMatcher<MethodDescription> getMethodsMatcher() {
+                        return named(CONNECT_METHOD); // 按名称匹配
+                    }
 
-                @Override
-                public String getMethodsInterceptor() {
-                    return "org.apache.skywalking.apm.plugin.jdbc.mysql.v8.ConnectionCreateInterceptor";
-                }
+                    @Override
+                    public String getMethodsInterceptor() {
+                        return "org.apache.skywalking.apm.plugin.jdbc.mysql.v8.ConnectionCreateInterceptor";
+                    }
 
-                @Override
-                public boolean isOverrideArgs() {
-                    return false;
+                    @Override
+                    public boolean isOverrideArgs() {
+                        return false;
+                    }
                 }
-            }
         };
     }
 

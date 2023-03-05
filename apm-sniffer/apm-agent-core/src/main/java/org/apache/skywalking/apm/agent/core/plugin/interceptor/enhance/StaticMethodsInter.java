@@ -18,15 +18,16 @@
 
 package org.apache.skywalking.apm.agent.core.plugin.interceptor.enhance;
 
-import java.lang.reflect.Method;
-import java.util.concurrent.Callable;
 import net.bytebuddy.implementation.bind.annotation.AllArguments;
 import net.bytebuddy.implementation.bind.annotation.Origin;
 import net.bytebuddy.implementation.bind.annotation.RuntimeType;
 import net.bytebuddy.implementation.bind.annotation.SuperCall;
-import org.apache.skywalking.apm.agent.core.plugin.loader.InterceptorInstanceLoader;
 import org.apache.skywalking.apm.agent.core.logging.api.ILog;
 import org.apache.skywalking.apm.agent.core.logging.api.LogManager;
+import org.apache.skywalking.apm.agent.core.plugin.loader.InterceptorInstanceLoader;
+
+import java.lang.reflect.Method;
+import java.util.concurrent.Callable;
 
 /**
  * The actual byte-buddy's interceptor to intercept class static methods. In this class, it provides a bridge between
@@ -43,7 +44,7 @@ public class StaticMethodsInter {
     private String staticMethodsAroundInterceptorClassName;
 
     /**
-     * Set the name of {@link StaticMethodsInter#staticMethodsAroundInterceptorClassName}
+     * Set the name of {@link StaticMethodsInter#staticMethodsAroundInterceptorClassName} 全限定类名
      *
      * @param staticMethodsAroundInterceptorClassName class full name.
      */
@@ -53,9 +54,19 @@ public class StaticMethodsInter {
 
     /**
      * Intercept the target static method.
+     * 最终该字节码逻辑的落脚点 | 针对静态方法
+     * Interceptor interceptor = load()
+     * interceptor.beforeMethod();
+     * try {
+     * /    zuper.call();
+     * / } catch (Throwable t) {
+     * /    interceptor.handleMethodException();
+     * / } finally {
+     * /    interceptor.afterMethod();
+     * / }
      *
-     * @param clazz        target class
-     * @param allArguments all method arguments
+     * @param clazz        target class 所要修改的类
+     * @param allArguments all method arguments 原方法所有的入参
      * @param method       method description.
      * @param zuper        the origin call ref.
      * @return the return value of target static method.
@@ -64,9 +75,10 @@ public class StaticMethodsInter {
      */
     @RuntimeType
     public Object intercept(@Origin Class<?> clazz, @AllArguments Object[] allArguments, @Origin Method method,
-        @SuperCall Callable<?> zuper) throws Throwable {
+                            @SuperCall Callable<?> zuper) throws Throwable {
+        // 实例化出自定义的静态方法拦截器
         StaticMethodsAroundInterceptor interceptor = InterceptorInstanceLoader.load(staticMethodsAroundInterceptorClassName, clazz
-            .getClassLoader());
+                .getClassLoader());
 
         MethodInterceptResult result = new MethodInterceptResult();
         try {
@@ -77,10 +89,11 @@ public class StaticMethodsInter {
 
         Object ret = null;
         try {
+            // 前进还是终止
             if (!result.isContinue()) {
                 ret = result._ret();
             } else {
-                ret = zuper.call();
+                ret = zuper.call(); // 表示原方法的调用
             }
         } catch (Throwable t) {
             try {

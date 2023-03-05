@@ -125,6 +125,7 @@ public abstract class AbstractClassEnhancePluginDefine {
 
     /**
      * Enhance a class to intercept constructors and class instance methods.
+     * 针对的是拦截构造器实例和类的实例方法
      *
      * @param typeDescription target class description
      * @param newClassBuilder byte-buddy's builder to manipulate class bytecode.
@@ -136,6 +137,7 @@ public abstract class AbstractClassEnhancePluginDefine {
 
     /**
      * Enhance a class to intercept class static methods.
+     * 针对的是类的静态方法
      *
      * @param typeDescription target class description
      * @param newClassBuilder byte-buddy's builder to manipulate class bytecode.
@@ -167,6 +169,11 @@ public abstract class AbstractClassEnhancePluginDefine {
         return null;
     }
 
+    /**
+     * JDK 类库的类加载器 bootstrap 来加载
+     *
+     * @return 默认 false
+     */
     public boolean isBootstrapInstrumentation() {
         return false;
     }

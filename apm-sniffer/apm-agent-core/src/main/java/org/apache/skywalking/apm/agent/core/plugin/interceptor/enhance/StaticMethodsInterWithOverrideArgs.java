@@ -18,14 +18,15 @@
 
 package org.apache.skywalking.apm.agent.core.plugin.interceptor.enhance;
 
-import java.lang.reflect.Method;
 import net.bytebuddy.implementation.bind.annotation.AllArguments;
 import net.bytebuddy.implementation.bind.annotation.Morph;
 import net.bytebuddy.implementation.bind.annotation.Origin;
 import net.bytebuddy.implementation.bind.annotation.RuntimeType;
-import org.apache.skywalking.apm.agent.core.plugin.loader.InterceptorInstanceLoader;
 import org.apache.skywalking.apm.agent.core.logging.api.ILog;
 import org.apache.skywalking.apm.agent.core.logging.api.LogManager;
+import org.apache.skywalking.apm.agent.core.plugin.loader.InterceptorInstanceLoader;
+
+import java.lang.reflect.Method;
 
 /**
  * The actual byte-buddy's interceptor to intercept class static methods. In this class, it provides a bridge between
@@ -52,6 +53,7 @@ public class StaticMethodsInterWithOverrideArgs {
 
     /**
      * Intercept the target static method.
+     * OverrideCallable 允许传入参数
      *
      * @param clazz        target class
      * @param allArguments all method arguments
@@ -63,9 +65,9 @@ public class StaticMethodsInterWithOverrideArgs {
      */
     @RuntimeType
     public Object intercept(@Origin Class<?> clazz, @AllArguments Object[] allArguments, @Origin Method method,
-        @Morph OverrideCallable zuper) throws Throwable {
+                            @Morph OverrideCallable zuper) throws Throwable {
         StaticMethodsAroundInterceptor interceptor = InterceptorInstanceLoader.load(staticMethodsAroundInterceptorClassName, clazz
-            .getClassLoader());
+                .getClassLoader());
 
         MethodInterceptResult result = new MethodInterceptResult();
         try {
@@ -79,7 +81,7 @@ public class StaticMethodsInterWithOverrideArgs {
             if (!result.isContinue()) {
                 ret = result._ret();
             } else {
-                ret = zuper.call(allArguments);
+                ret = zuper.call(allArguments); // 被修改过的入参来调用原方法
             }
         } catch (Throwable t) {
             try {
