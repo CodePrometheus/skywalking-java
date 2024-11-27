@@ -51,6 +51,7 @@ public class TomcatInvokeInterceptor implements InstanceMethodsAroundInterceptor
         Request request = (Request) allArguments[0];
         ContextCarrier contextCarrier = new ContextCarrier();
 
+        // 创建 CarrierItem 的链表
         CarrierItem next = contextCarrier.items();
         while (next.hasNext()) {
             next = next.next();

@@ -282,6 +282,7 @@ public class TracingContext implements AbstractTracerContext {
              */
             profilingRecheck(parentSpan, operationName);
             parentSpan.setOperationName(operationName);
+            // 覆写
             entrySpan = parentSpan;
             return entrySpan.start();
         } else {
