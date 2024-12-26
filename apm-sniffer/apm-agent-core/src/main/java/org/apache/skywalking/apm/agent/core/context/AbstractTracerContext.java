@@ -42,6 +42,7 @@ public interface AbstractTracerContext {
     /**
      * Capture a snapshot for cross-thread propagation. It's a similar concept with ActiveSpan.Continuation in
      * OpenTracing-java How to build, depends on the implementation.
+     * 跨线程的 inject
      *
      * @return the {@link ContextSnapshot} , which includes the reference context.
      */

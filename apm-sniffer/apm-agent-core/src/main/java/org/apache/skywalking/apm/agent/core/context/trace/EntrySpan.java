@@ -43,13 +43,16 @@ public class EntrySpan extends StackBasedTracingSpan {
 
     /**
      * Set the {@link #startTime}, when the first start, which means the first service provided.
+     * EntrySpan 只会由第一个插件创建，但是后面的插件复用 EntrySpan 时都会来调用一次 start 方法
+     * 因为每一个创建都以为自己是第一个创建这个 EntrySpan
      */
     @Override
     public EntrySpan start() {
         if ((currentMaxDepth = ++stackDepth) == 1) {
-            super.start();
+            super.start(); // 刚刚创建出来
         }
-        clearWhenRestart();
+        // 只要不为 1 一定是复用前面插件创建的 entrySpan
+        clearWhenRestart(); // 清空前面的
         return this;
     }
 

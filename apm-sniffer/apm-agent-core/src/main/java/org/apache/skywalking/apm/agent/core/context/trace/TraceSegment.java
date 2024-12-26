@@ -30,6 +30,8 @@ import org.apache.skywalking.apm.network.language.agent.v3.SegmentObject;
  * {@link TraceSegment} is a segment or fragment of the distributed trace. See https://github.com/opentracing/specification/blob/master/specification.md#the-opentracing-data-model
  * A {@link TraceSegment} means the segment, which exists in current {@link Thread}. And the distributed trace is formed
  * by multi {@link TraceSegment}s, because the distributed trace crosses multi-processes, multi-threads. <p>
+ *     
+ *      trace 不是一个具体的数据模型，而是多个 segment 串起来表示的逻辑对象
  */
 public class TraceSegment {
     /**
@@ -43,6 +45,7 @@ public class TraceSegment {
      * we only cache the first parent segment reference.
      * <p>
      * This field will not be serialized. Keeping this field is only for quick accessing.
+     * 指向当前 segment 的 parent segment 的指针
      */
     private TraceSegmentRef ref;
 
@@ -57,7 +60,7 @@ public class TraceSegment {
      * element, because only one parent {@link TraceSegment} exists, but, in batch scenario, the num becomes greater
      * than 1, also meaning multi-parents {@link TraceSegment}. But we only related the first parent TraceSegment.
      */
-    private DistributedTraceId relatedGlobalTraceId;
+    private DistributedTraceId relatedGlobalTraceId; // 当前 segment 所在 trace 的 id
 
     private boolean ignore = false;
 
@@ -88,6 +91,7 @@ public class TraceSegment {
 
     /**
      * Establish the line between this segment and the relative global trace id.
+     * 将当前的 traceSegment 关联到某一条 traceID 上
      */
     public void relatedGlobalTrace(DistributedTraceId distributedTraceId) {
         if (relatedGlobalTraceId instanceof NewDistributedTraceId) {
@@ -98,6 +102,7 @@ public class TraceSegment {
     /**
      * After {@link AbstractSpan} is finished, as be controller by "skywalking-api" module, notify the {@link
      * TraceSegment} to archive it.
+     * 加入 span
      */
     public void archive(AbstractTracingSpan finishedSpan) {
         spans.add(finishedSpan);

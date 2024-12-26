@@ -20,6 +20,7 @@ package org.apache.skywalking.apm.agent.core.context.ids;
 
 /**
  * The <code>NewDistributedTraceId</code> is a {@link DistributedTraceId} with a new generated id.
+ * 在一条链路中（Trace）无论请求分布于多少不同的进程中，TraceId 都不会改变
  */
 public class NewDistributedTraceId extends DistributedTraceId {
     public NewDistributedTraceId() {

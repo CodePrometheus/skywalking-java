@@ -42,10 +42,10 @@ public class ContextManager implements BootService {
     private static final String EMPTY_TRACE_CONTEXT_ID = "N/A";
     private static final ILog LOGGER = LogManager.getLogger(ContextManager.class);
     private static ThreadLocal<AbstractTracerContext> CONTEXT = new ThreadLocal<AbstractTracerContext>();
+    // TracerContext 有时候需要记录一些额外的信息，存在 RuntimeContext
     private static ThreadLocal<RuntimeContext> RUNTIME_CONTEXT = new ThreadLocal<RuntimeContext>();
     private static ContextManagerExtendService EXTEND_SERVICE;
 
-    // TracerContext 并放入本地线程池
     private static AbstractTracerContext getOrCreate(String operationName, boolean forceSampling) {
         AbstractTracerContext context = CONTEXT.get();
         if (context == null) {
@@ -61,6 +61,7 @@ public class ContextManager implements BootService {
                 context = EXTEND_SERVICE.createTraceContext(operationName, forceSampling);
 
             }
+            // TracerContext 并放入本地线程池
             CONTEXT.set(context);
         }
         return context;
@@ -109,10 +110,15 @@ public class ContextManager implements BootService {
         if (carrier != null && carrier.isValid()) {
             SamplingService samplingService = ServiceManager.INSTANCE.findService(SamplingService.class);
             samplingService.forceSampled();
+            // 链路中的前置 segment 已经存在，后续的必须是 true，否则链路可能会断开
             context = getOrCreate(operationName, true);
             span = context.createEntrySpan(operationName);
+            /*
+              1.carrier != null 这时前面的 segment 不为空，数据转移
+             */
             context.extract(carrier);
         } else {
+            // 第一个 segment 可以是 false, 根据采样率来决定当前链路是否要采样
             context = getOrCreate(operationName, false);
             span = context.createEntrySpan(operationName);
         }
@@ -125,6 +131,7 @@ public class ContextManager implements BootService {
         return context.createLocalSpan(operationName);
     }
 
+    // 要调用下一个受sw监控的进程, 对方要知道当前的 segment 信息
     public static AbstractSpan createExitSpan(String operationName, ContextCarrier carrier, String remotePeer) {
         if (carrier == null) {
             throw new IllegalArgumentException("ContextCarrier can't be null.");

@@ -29,12 +29,13 @@ import org.apache.skywalking.apm.network.language.agent.v3.SegmentReference;
  * {@link TraceSegmentRef} is like a pointer, which ref to another {@link TraceSegment}, use {@link #spanId} point to
  * the exact span of the ref {@link TraceSegment}.
  * <p>
+ *     不会被发送到后端，只是用来在内存中表示一个引用关系
  */
 @Getter
 public class TraceSegmentRef {
     private SegmentRefType type;
     private String traceId;
-    private String traceSegmentId;
+    private String traceSegmentId;  // The segment id of the parent
     private int spanId;
     private String parentService;
     private String parentServiceInstance;
@@ -67,6 +68,7 @@ public class TraceSegmentRef {
         this.parentEndpoint = snapshot.getParentEndpoint();
     }
 
+    // Java object to protobuf object
     public SegmentReference transform() {
         SegmentReference.Builder refBuilder = SegmentReference.newBuilder();
         if (SegmentRefType.CROSS_PROCESS.equals(type)) {
