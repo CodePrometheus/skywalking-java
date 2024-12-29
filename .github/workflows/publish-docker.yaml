@@ -36,7 +36,7 @@ jobs:
         with:
           submodules: true
       - name: Cache local Maven repository
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-publish-docker-${{ hashFiles('**/pom.xml') }}
@@ -47,7 +47,7 @@ jobs:
           java-version: 17
       - name: Build Agent
         run: make build
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         name: Upload Agent
         with:
           name: skywalking-agent
@@ -64,14 +64,14 @@ jobs:
     timeout-minutes: 60
     strategy:
       matrix:
-        java-version: [ 8, 11, 17 ]
+        java-version: [ 8, 11, 17, 21 ]
     env:
       TAG: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: true
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4
         with:
           name: skywalking-agent
           path: skywalking-agent

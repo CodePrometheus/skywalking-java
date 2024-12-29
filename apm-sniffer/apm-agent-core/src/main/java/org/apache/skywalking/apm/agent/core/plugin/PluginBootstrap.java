@@ -18,14 +18,13 @@
 
 package org.apache.skywalking.apm.agent.core.plugin;
 
-import org.apache.skywalking.apm.agent.core.boot.AgentPackageNotFoundException;
-import org.apache.skywalking.apm.agent.core.logging.api.ILog;
-import org.apache.skywalking.apm.agent.core.logging.api.LogManager;
-import org.apache.skywalking.apm.agent.core.plugin.loader.AgentClassLoader;
-
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.skywalking.apm.agent.core.boot.AgentPackageNotFoundException;
+import org.apache.skywalking.apm.agent.core.plugin.loader.AgentClassLoader;
+import org.apache.skywalking.apm.agent.core.logging.api.ILog;
+import org.apache.skywalking.apm.agent.core.logging.api.LogManager;
 
 /**
  * Plugins finder. Use {@link PluginResourcesResolver} to find all plugins, and ask {@link PluginCfg} to load all plugin
@@ -33,6 +32,15 @@ import java.util.List;
  */
 public class PluginBootstrap {
     private static final ILog LOGGER = LogManager.getLogger(PluginBootstrap.class);
+
+    // Preload ThreadLocalRandom in case of intermittent ClassCircularityError since ByteBuddy 1.12.11
+    static {
+        try {
+            Class.forName("java.util.concurrent.ThreadLocalRandom");
+        } catch (Exception e) {
+            LOGGER.warn(e, "Preload ThreadLocalRandom failure.");
+        }
+    }
 
     /**
      * load all plugins.
@@ -65,9 +73,9 @@ public class PluginBootstrap {
         for (PluginDefine pluginDefine : pluginClassList) {
             try {
                 LOGGER.debug("loading plugin class {}.", pluginDefine.getDefineClass());
-                AbstractClassEnhancePluginDefine plugin = (AbstractClassEnhancePluginDefine)
-                        Class.forName(pluginDefine.getDefineClass(), true, AgentClassLoader
-                                .getDefault()).newInstance();
+                AbstractClassEnhancePluginDefine plugin = (AbstractClassEnhancePluginDefine) Class.forName(pluginDefine.getDefineClass(), true, AgentClassLoader
+                    .getDefault()).newInstance();
+                plugin.setPluginName(pluginDefine.getName());
                 plugins.add(plugin);
             } catch (Throwable t) {
                 LOGGER.error(t, "load plugin [{}] failure.", pluginDefine.getDefineClass());

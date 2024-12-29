@@ -66,6 +66,8 @@ jobs:
           - jedis-2.x-scenario
           - jedis-3.1.x-plus-scenario
           - jedis-4.x-scenario
+          - jedis-3.3.x-plus-scenario
+          - jedis-2.x-3.x-cluster-scenario
           - jetty-scenario
           - kafka-scenario
           - kotlin-coroutine-scenario
@@ -78,6 +80,7 @@ jobs:
           - mssql-jdbc-scenario
           - mybatis-3.x-scenario
           - resteasy-4.x-scenario
+          - netty-http-4.1.x-scenario
     steps:
       - uses: actions/checkout@v2
         with:

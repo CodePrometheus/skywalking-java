@@ -28,8 +28,7 @@ import org.apache.skywalking.apm.agent.core.plugin.match.ClassMatch;
 import org.apache.skywalking.apm.plugin.elasticsearch.v6.interceptor.Constants;
 
 import static net.bytebuddy.matcher.ElementMatchers.named;
-import static net.bytebuddy.matcher.ElementMatchers.takesArguments;
-import static org.apache.skywalking.apm.agent.core.plugin.bytebuddy.ArgumentTypeNameMatch.takesArgumentWithType;
+import static net.bytebuddy.matcher.ElementMatchers.takesArgument;
 import static org.apache.skywalking.apm.agent.core.plugin.match.NameMatch.byName;
 
 /**
@@ -60,7 +59,7 @@ public class RestHighLevelClientInstrumentation extends ClassEnhancePluginDefine
             new ConstructorInterceptPoint() {
                 @Override
                 public ElementMatcher<MethodDescription> getConstructorMatcher() {
-                    return takesArguments(1);
+                    return takesArgument(0, named("org.elasticsearch.client.RestClient"));
                 }
 
                 @Override
@@ -77,22 +76,6 @@ public class RestHighLevelClientInstrumentation extends ClassEnhancePluginDefine
             new InstanceMethodsInterceptPoint() {
                 @Override
                 public ElementMatcher<MethodDescription> getMethodsMatcher() {
-                    return named("performRequestAndParseEntity").and(takesArgumentWithType(0, "org.elasticsearch.client.indices.CreateIndexRequest"));
-                }
-
-                @Override
-                public String getMethodsInterceptor() {
-                    return Constants.INDICES_CLIENT_CREATE_METHODS_INTERCEPTOR;
-                }
-
-                @Override
-                public boolean isOverrideArgs() {
-                    return false;
-                }
-            },
-            new InstanceMethodsInterceptPoint() {
-                @Override
-                public ElementMatcher<MethodDescription> getMethodsMatcher() {
                     return named("get").or(named("getAsync"));
                 }
 
@@ -103,7 +86,7 @@ public class RestHighLevelClientInstrumentation extends ClassEnhancePluginDefine
 
                 @Override
                 public boolean isOverrideArgs() {
-                    return false;
+                    return true;
                 }
             },
             new InstanceMethodsInterceptPoint() {
@@ -119,7 +102,7 @@ public class RestHighLevelClientInstrumentation extends ClassEnhancePluginDefine
 
                 @Override
                 public boolean isOverrideArgs() {
-                    return false;
+                    return true;
                 }
             },
             new InstanceMethodsInterceptPoint() {
@@ -135,7 +118,7 @@ public class RestHighLevelClientInstrumentation extends ClassEnhancePluginDefine
 
                 @Override
                 public boolean isOverrideArgs() {
-                    return false;
+                    return true;
                 }
             },
             new InstanceMethodsInterceptPoint() {
@@ -151,7 +134,7 @@ public class RestHighLevelClientInstrumentation extends ClassEnhancePluginDefine
 
                 @Override
                 public boolean isOverrideArgs() {
-                    return false;
+                    return true;
                 }
             },
             new InstanceMethodsInterceptPoint() {
@@ -199,7 +182,7 @@ public class RestHighLevelClientInstrumentation extends ClassEnhancePluginDefine
 
                 @Override
                 public boolean isOverrideArgs() {
-                    return false;
+                    return true;
                 }
             },
             new InstanceMethodsInterceptPoint() {
@@ -215,7 +198,7 @@ public class RestHighLevelClientInstrumentation extends ClassEnhancePluginDefine
 
                 @Override
                 public boolean isOverrideArgs() {
-                    return false;
+                    return true;
                 }
             },
             new InstanceMethodsInterceptPoint() {
@@ -231,7 +214,7 @@ public class RestHighLevelClientInstrumentation extends ClassEnhancePluginDefine
 
                 @Override
                 public boolean isOverrideArgs() {
-                    return false;
+                    return true;
                 }
             },
             new InstanceMethodsInterceptPoint() {
@@ -247,7 +230,7 @@ public class RestHighLevelClientInstrumentation extends ClassEnhancePluginDefine
 
                 @Override
                 public boolean isOverrideArgs() {
-                    return false;
+                    return true;
                 }
             }
         };

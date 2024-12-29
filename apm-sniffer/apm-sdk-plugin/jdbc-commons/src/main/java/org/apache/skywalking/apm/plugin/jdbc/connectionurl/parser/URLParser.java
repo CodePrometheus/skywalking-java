@@ -33,8 +33,14 @@ public class URLParser {
     private static final String MARIADB_JDBC_URL_PREFIX = "jdbc:mariadb";
     private static final String MSSQL_JTDS_URL_PREFIX = "jdbc:jtds:sqlserver:";
     private static final String MSSQL_JDBC_URL_PREFIX = "jdbc:sqlserver:";
-    private static final String KYLIN_JDBC_URK_PREFIX = "jdbc:kylin";
-    private static final String IMPALA_JDBC_URK_PREFIX = "jdbc:impala";
+    private static final String KYLIN_JDBC_URL_PREFIX = "jdbc:kylin";
+    private static final String IMPALA_JDBC_URL_PREFIX = "jdbc:impala";
+    private static final String CLICKHOUSE_JDBC_URL_PREFIX = "jdbc:clickhouse";
+    private static final String DERBY_JDBC_URL_PREFIX = "jdbc:derby:";
+    private static final String SQLITE_JDBC_URL_PREFIX = "jdbc:sqlite:";
+    private static final String DB2_JDBC_URL_PREFIIX = "jdbc:db2:";
+    private static final String SYBASE_JDBC_URL_PREFIX = "jdbc:sybase:tds:";
+    private static final String OCEANBASE_JDBC_URL_PREFIX = "jdbc:oceanbase:";
 
     public static ConnectionInfo parser(String url) {
         ConnectionURLParser parser = null;
@@ -53,10 +59,22 @@ public class URLParser {
             parser = new MssqlJtdsURLParser(url);
         } else if (lowerCaseUrl.startsWith(MSSQL_JDBC_URL_PREFIX)) {
             parser = new MssqlJdbcURLParser(url);
-        } else if (lowerCaseUrl.startsWith(KYLIN_JDBC_URK_PREFIX)) {
+        } else if (lowerCaseUrl.startsWith(KYLIN_JDBC_URL_PREFIX)) {
             parser = new KylinJdbcURLParser(url);
-        } else if (lowerCaseUrl.startsWith(IMPALA_JDBC_URK_PREFIX)) {
+        } else if (lowerCaseUrl.startsWith(IMPALA_JDBC_URL_PREFIX)) {
             parser = new ImpalaJdbcURLParser(url);
+        } else if (lowerCaseUrl.startsWith(CLICKHOUSE_JDBC_URL_PREFIX)) {
+            parser = new ClickHouseURLParser(url);
+        } else if (lowerCaseUrl.startsWith(DERBY_JDBC_URL_PREFIX)) {
+            parser = new DerbyURLParser(url);
+        } else if (lowerCaseUrl.startsWith(SQLITE_JDBC_URL_PREFIX)) {
+            parser = new SqliteURLParser(url);
+        } else if (lowerCaseUrl.startsWith(DB2_JDBC_URL_PREFIIX)) {
+            parser = new Db2URLParser(url);
+        } else if (lowerCaseUrl.startsWith(SYBASE_JDBC_URL_PREFIX)) {
+            parser = new SybaseURLParser(url);
+        } else if (lowerCaseUrl.startsWith(OCEANBASE_JDBC_URL_PREFIX)) {
+            parser = new OceanBaseURLParser(url);
         }
         return parser.parse();
     }

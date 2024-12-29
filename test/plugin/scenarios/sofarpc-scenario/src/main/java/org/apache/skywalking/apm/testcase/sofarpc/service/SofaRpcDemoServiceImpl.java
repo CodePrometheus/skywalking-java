@@ -25,4 +25,9 @@ public class SofaRpcDemoServiceImpl implements SofaRpcDemoService {
     public String hello(String name) {
         return "hello, " + name;
     }
+
+    @Override
+    public String callback(String name) {
+        return "hello, " + name;
+    }
 }

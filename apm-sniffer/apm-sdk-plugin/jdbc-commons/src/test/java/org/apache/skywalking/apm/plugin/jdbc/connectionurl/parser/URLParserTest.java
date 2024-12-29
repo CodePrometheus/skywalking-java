@@ -114,6 +114,14 @@ public class URLParserTest {
     }
 
     @Test
+    public void testParseOracleLowerTNSName() {
+        ConnectionInfo connectionInfo = new URLParser().parser("jdbc:oracle:thin:@(description=(address=(protocol=tcp)(host= localhost )(port= 1521))(connect_data=(server=dedicated)(service_name=orcl)))");
+        assertThat(connectionInfo.getDBType(), is("Oracle"));
+        assertThat(connectionInfo.getDatabaseName(), is("orcl"));
+        assertThat(connectionInfo.getDatabasePeer(), is("localhost:1521"));
+    }
+
+    @Test
     public void testParseOracleTNSNameWithMultiAddress() {
         ConnectionInfo connectionInfo = new URLParser().parser("jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL= TCP)(HOST=hostA)(PORT= 1523 ))(ADDRESS=(PROTOCOL=TCP)(HOST=hostB)(PORT= 1521 )))(SOURCE_ROUTE=yes)(CONNECT_DATA=(SERVICE_NAME=orcl)))");
         assertThat(connectionInfo.getDBType(), is("Oracle"));
@@ -167,5 +175,244 @@ public class URLParserTest {
         assertThat(connectionInfo.getDBType(), is("Mariadb"));
         assertThat(connectionInfo.getDatabaseName(), is("test"));
         assertThat(connectionInfo.getDatabasePeer(), is("primaryhost:3306"));
+    }
+
+    @Test
+    public void testParseClickhouseJDBCURL() {
+        ConnectionInfo connectionInfo = new URLParser().parser("jdbc:clickhouse://localhost:8123/test");
+        assertThat(connectionInfo.getDBType(), is("ClickHouse"));
+        assertThat(connectionInfo.getDatabaseName(), is("test"));
+        assertThat(connectionInfo.getDatabasePeer(), is("localhost:8123"));
+    }
+
+    @Test
+    public void testParseImpalaJDBCURL() {
+        ConnectionInfo connectionInfo = new URLParser().parser("jdbc:impala://localhost:21050/test;AuthMech=3;UID=UserName;PWD=Password");
+        assertThat(connectionInfo.getDBType(), is("Impala"));
+        assertThat(connectionInfo.getDatabaseName(), is("test"));
+        assertThat(connectionInfo.getDatabasePeer(), is("localhost:21050"));
+    }
+
+    @Test
+    public void testParseImpalaJDBCURLWithSchema() {
+        ConnectionInfo connectionInfo = new URLParser().parser("jdbc:impala://localhost:21050/test");
+        assertThat(connectionInfo.getDBType(), is("Impala"));
+        assertThat(connectionInfo.getDatabaseName(), is("test"));
+        assertThat(connectionInfo.getDatabasePeer(), is("localhost:21050"));
+    }
+
+    @Test
+    public void testParseImpalaJDBCURLWithoutSchema() {
+        ConnectionInfo connectionInfo = new URLParser().parser("jdbc:impala://localhost:21050");
+        assertThat(connectionInfo.getDBType(), is("Impala"));
+        assertThat(connectionInfo.getDatabasePeer(), is("localhost:21050"));
+    }
+
+    @Test
+    public void testParsePostgresqlJDBCURLWithHostAndParams() {
+        ConnectionInfo connectionInfo = new URLParser().parser("jdbc:postgresql://localhost:5432/testdb?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf8&characterSetResults=utf8&useSSL=false&allowMultiQueries=true");
+        assertThat(connectionInfo.getDBType(), is("PostgreSQL"));
+        assertThat(connectionInfo.getDatabaseName(), is("testdb"));
+        assertThat(connectionInfo.getDatabasePeer(), is("localhost:5432"));
+    }
+
+    @Test
+    public void testParsePostgresqlJDBCURLWithMultiHost() {
+        ConnectionInfo connectionInfo = new URLParser().parser("jdbc:postgresql://localhost1:5432,localhost2:5433/testdb?target_session_attrs=any&application_name=myapp");
+        assertThat(connectionInfo.getDBType(), is("PostgreSQL"));
+        assertThat(connectionInfo.getDatabaseName(), is("testdb"));
+        assertThat(connectionInfo.getDatabasePeer(), is("localhost1:5432,localhost2:5433"));
+    }
+
+    @Test
+    public void testParsePostgresqlJDBCURLWithHostNoPort() {
+        ConnectionInfo connectionInfo = new URLParser().parser("jdbc:postgresql://localhost/testdb");
+        assertThat(connectionInfo.getDBType(), is("PostgreSQL"));
+        assertThat(connectionInfo.getDatabaseName(), is("testdb"));
+        assertThat(connectionInfo.getDatabasePeer(), is("localhost:5432"));
+    }
+
+    @Test
+    public void testParsePostgresqlJDBCURLWithHostNoDb() {
+        ConnectionInfo connectionInfo = new URLParser().parser("jdbc:postgresql://localhost:5432");
+        assertThat(connectionInfo.getDBType(), is("PostgreSQL"));
+        assertThat(connectionInfo.getDatabaseName(), is(""));
+        assertThat(connectionInfo.getDatabasePeer(), is("localhost:5432"));
+    }
+
+    @Test
+    public void testParsePostgresqlJDBCURLWithHostNoPortAndDb() {
+        ConnectionInfo connectionInfo = new URLParser().parser("jdbc:postgresql://localhost");
+        assertThat(connectionInfo.getDBType(), is("PostgreSQL"));
+        assertThat(connectionInfo.getDatabaseName(), is(""));
+        assertThat(connectionInfo.getDatabasePeer(), is("localhost:5432"));
+    }
+
+    @Test
+    public void testParsePostgresqlJDBCURLEmpty() {
+        ConnectionInfo connectionInfo = new URLParser().parser("jdbc:postgresql://");
+        assertThat(connectionInfo.getDBType(), is("PostgreSQL"));
+        assertThat(connectionInfo.getDatabaseName(), is(""));
+        assertThat(connectionInfo.getDatabasePeer(), is(":5432"));
+    }
+
+    @Test
+    public void testParsePostgresqlJDBCURLWithNamedParams() {
+        ConnectionInfo connectionInfo = new URLParser().parser("jdbc:postgresql:///testdb?host=localhost&port=5433");
+        assertThat(connectionInfo.getDBType(), is("PostgreSQL"));
+        assertThat(connectionInfo.getDatabaseName(), is("testdb"));
+        assertThat(connectionInfo.getDatabasePeer(), is("localhost:5433"));
+    }
+
+    @Test
+    public void testParsePostgresqlJDBCURLWithSingleIpv6() {
+        ConnectionInfo connectionInfo = new URLParser().parser("jdbc:postgresql://[2001:db8::1234]/testdb");
+        assertThat(connectionInfo.getDBType(), is("PostgreSQL"));
+        assertThat(connectionInfo.getDatabaseName(), is("testdb"));
+        assertThat(connectionInfo.getDatabasePeer(), is("[2001:db8::1234]:5432"));
+    }
+
+    @Test
+    public void testParsePostgresqlJDBCURLWithMultiIpv6() {
+        ConnectionInfo connectionInfo = new URLParser().parser(
+            "jdbc:postgresql://[2001:db8::1234],[2001:db8::1235]/testdb");
+        assertThat(connectionInfo.getDBType(), is("PostgreSQL"));
+        assertThat(connectionInfo.getDatabaseName(), is("testdb"));
+        assertThat(connectionInfo.getDatabasePeer(), is("[2001:db8::1234]:5432,[2001:db8::1235]:5432"));
+    }
+
+    @Test
+    public void testParseOceanBaseJDBCURL() {
+        ConnectionInfo connectionInfo = new URLParser().parser(
+            "jdbc:oceanbase://localhost:2881/mydb?user=root@sys&password=pass&pool=false&useBulkStmts=true&rewriteBatchedStatements=false&useServerPrepStmts=true");
+        assertThat(connectionInfo.getDBType(), is("OceanBase"));
+        assertThat(connectionInfo.getDatabaseName(), is("mydb"));
+        assertThat(connectionInfo.getDatabasePeer(), is("localhost:2881"));
+    }
+
+    @Test
+    public void testParseOceanBaseJDBCURLWithMultiHosts() {
+        ConnectionInfo connectionInfo = new URLParser().parser(
+            "jdbc:oceanbase://primaryhost:2888,secondaryhost1,secondaryhost2/mydb?user=root@sys&password=pass&pool=false&useBulkStmts=true&rewriteBatchedStatements=false&useServerPrepStmts=true");
+        assertThat(connectionInfo.getDBType(), is("OceanBase"));
+        assertThat(connectionInfo.getDatabaseName(), is("mydb"));
+        assertThat(connectionInfo.getDatabasePeer(), is("primaryhost:2888,secondaryhost1:2881,secondaryhost2:2881"));
+    }
+
+    @Test
+    public void testParseDerbyJDBCURLWithDirMode() {
+        ConnectionInfo connectionInfo = new URLParser().parser(
+            "jdbc:derby:directory:mydb");
+        assertThat(connectionInfo.getDBType(), is("Derby"));
+        assertThat(connectionInfo.getDatabaseName(), is("mydb"));
+        assertThat(connectionInfo.getDatabasePeer(), is("localhost:-1"));
+    }
+
+    @Test
+    public void testParseDerbyJDBCURLWithMemMode() {
+        ConnectionInfo connectionInfo = new URLParser().parser(
+            "jdbc:derby:memory:mydb;create=true");
+        assertThat(connectionInfo.getDBType(), is("Derby"));
+        assertThat(connectionInfo.getDatabaseName(), is("mydb"));
+        assertThat(connectionInfo.getDatabasePeer(), is("localhost:-1"));
+    }
+
+    @Test
+    public void testParseDerbyJDBCURLWithClassPathMode() {
+        ConnectionInfo connectionInfo = new URLParser().parser(
+            "jdbc:derby:classpath:/test/mydb");
+        assertThat(connectionInfo.getDBType(), is("Derby"));
+        assertThat(connectionInfo.getDatabaseName(), is("mydb"));
+        assertThat(connectionInfo.getDatabasePeer(), is("localhost:-1"));
+    }
+
+    @Test
+    public void testParseDerbyJDBCURLWithJarMode() {
+        ConnectionInfo connectionInfo = new URLParser().parser(
+            "jdbc:derby:jar:(C:/dbs.jar)test/mydb");
+        assertThat(connectionInfo.getDBType(), is("Derby"));
+        assertThat(connectionInfo.getDatabaseName(), is("mydb"));
+        assertThat(connectionInfo.getDatabasePeer(), is("localhost:-1"));
+    }
+
+    @Test
+    public void testParseDerbyJDBCURLWithEmbeddedMode() {
+        ConnectionInfo connectionInfo = new URLParser().parser(
+            "jdbc:derby:test/mydb;create=true");
+        assertThat(connectionInfo.getDBType(), is("Derby"));
+        assertThat(connectionInfo.getDatabaseName(), is("mydb"));
+        assertThat(connectionInfo.getDatabasePeer(), is("localhost:-1"));
+    }
+
+    @Test
+    public void testParseDerbyJDBCURLWithMemModeAndClientServerMode() {
+        ConnectionInfo connectionInfo = new URLParser().parser(
+            "jdbc:derby://localhost:1527/memory:/test/mydb;create=true");
+        assertThat(connectionInfo.getDBType(), is("Derby"));
+        assertThat(connectionInfo.getDatabaseName(), is("mydb"));
+        assertThat(connectionInfo.getDatabasePeer(), is("localhost:1527"));
+    }
+
+    @Test
+    public void testParseDerbyJDBCURLWithClientServerMode() {
+        ConnectionInfo connectionInfo = new URLParser().parser(
+            "jdbc:derby://localhost:1527/mydb;create=true;user=root;password=pass");
+        assertThat(connectionInfo.getDBType(), is("Derby"));
+        assertThat(connectionInfo.getDatabaseName(), is("mydb"));
+        assertThat(connectionInfo.getDatabasePeer(), is("localhost:1527"));
+    }
+
+    @Test
+    public void testParseDB2JDBCURL() {
+        ConnectionInfo connectionInfo = new URLParser().parser(
+            "jdbc:db2://localhost:50000/mydb:user=root;password=pass");
+        assertThat(connectionInfo.getDBType(), is("DB2"));
+        assertThat(connectionInfo.getDatabaseName(), is("mydb"));
+        assertThat(connectionInfo.getDatabasePeer(), is("localhost:50000"));
+    }
+
+    @Test
+    public void testParseDB2JDBCURLWithoutHost() {
+        ConnectionInfo connectionInfo = new URLParser().parser(
+            "jdbc:db2:mydb:user=root;password=pass");
+        assertThat(connectionInfo.getDBType(), is("DB2"));
+        assertThat(connectionInfo.getDatabaseName(), is("mydb"));
+        assertThat(connectionInfo.getDatabasePeer(), is("localhost:50000"));
+    }
+
+    @Test
+    public void testParseSqliteJDBCURL() {
+        ConnectionInfo connectionInfo = new URLParser().parser(
+            "jdbc:sqlite:C/test/mydb.db");
+        assertThat(connectionInfo.getDBType(), is("Sqlite"));
+        assertThat(connectionInfo.getDatabaseName(), is("mydb.db"));
+        assertThat(connectionInfo.getDatabasePeer(), is("localhost:-1"));
+    }
+
+    @Test
+    public void testParseSqliteJDBCURLWithMem() {
+        ConnectionInfo connectionInfo = new URLParser().parser(
+            "jdbc:sqlite::memory:?jdbc.explicit_readonly=true");
+        assertThat(connectionInfo.getDBType(), is("Sqlite"));
+        assertThat(connectionInfo.getDatabaseName(), is(""));
+        assertThat(connectionInfo.getDatabasePeer(), is("localhost:-1"));
+    }
+
+    @Test
+    public void testParseSqliteJDBCURLWithResource() {
+        ConnectionInfo connectionInfo = new URLParser().parser(
+            "jdbc:sqlite::resource:org/test/mydb.db");
+        assertThat(connectionInfo.getDBType(), is("Sqlite"));
+        assertThat(connectionInfo.getDatabaseName(), is("mydb.db"));
+        assertThat(connectionInfo.getDatabasePeer(), is("localhost:-1"));
+    }
+
+    @Test
+    public void testParseSybaseJDBCURL() {
+        ConnectionInfo connectionInfo = new URLParser().parser(
+            "jdbc:sybase:Tds:localhost:5000/mydb?charset=utf-8");
+        assertThat(connectionInfo.getDBType(), is("Sybase"));
+        assertThat(connectionInfo.getDatabaseName(), is("mydb"));
+        assertThat(connectionInfo.getDatabasePeer(), is("localhost:5000"));
     }
 }

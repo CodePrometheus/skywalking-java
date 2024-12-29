@@ -20,6 +20,15 @@
     },
     {
       "pattern": "https://kotlinlang.org.*"
+    },
+    {
+      "pattern": "^https://mvnrepository.com/"
+    },
+    {
+      "pattern": "^https://twitter.com*"
+    },
+    {
+      "pattern": "^https://blogs.oracle.com/javamagazine/post/a-peek-into-java-17-continuing-the-drive-to-encapsulate-the-java-runtime-internals"
     }
   ],
   "timeout": "10s",
@@ -30,6 +39,7 @@
     200,
     301,
     302,
-    401
+    401,
+    403
   ]
 }

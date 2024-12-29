@@ -19,6 +19,7 @@
 package org.apache.skywalking.apm.plugin;
 
 import org.apache.skywalking.apm.agent.core.context.ContextManager;
+import org.apache.skywalking.apm.agent.core.context.ContextSnapshot;
 import org.apache.skywalking.apm.agent.core.plugin.interceptor.enhance.EnhancedInstance;
 import org.apache.skywalking.apm.agent.core.plugin.interceptor.enhance.InstanceMethodsAroundInterceptor;
 import org.apache.skywalking.apm.agent.core.plugin.interceptor.enhance.MethodInterceptResult;
@@ -27,17 +28,11 @@ import java.lang.reflect.Method;
 public abstract class AbstractThreadingPoolInterceptor implements InstanceMethodsAroundInterceptor {
     @Override
     public void beforeMethod(EnhancedInstance objInst, Method method, Object[] allArguments, Class<?>[] argumentsTypes, MethodInterceptResult result) throws Throwable {
-        if (!ContextManager.isActive()) {
+        if (notToEnhance(allArguments)) {
             return;
         }
 
-        if (allArguments == null || allArguments.length < 1) {
-            return;
-        }
-
-        Object argument = allArguments[0];
-
-        Object wrappedObject = wrap(argument);
+        Object wrappedObject = wrap(allArguments[0]);
         if (wrappedObject != null) {
             allArguments[0] = wrappedObject;
         }
@@ -57,6 +52,25 @@ public abstract class AbstractThreadingPoolInterceptor implements InstanceMethod
 
     @Override
     public void handleMethodException(EnhancedInstance objInst, Method method, Object[] allArguments, Class<?>[] argumentsTypes, Throwable t) {
+        if (notToEnhance(allArguments)) {
+            return;
+        }
+
         ContextManager.activeSpan().log(t);
+    }
+
+    private boolean notToEnhance(Object[] allArguments) {
+        if (!ContextManager.isActive()) {
+            return true;
+        }
+
+        if (allArguments == null || allArguments.length < 1) {
+            return true;
+        }
+
+        Object argument = allArguments[0];
+
+        // Avoid duplicate enhancement, such as the case where it has already been enhanced by RunnableWrapper or CallableWrapper with toolkit.
+        return argument instanceof EnhancedInstance && ((EnhancedInstance) argument).getSkyWalkingDynamicField() instanceof ContextSnapshot;
     }
 }

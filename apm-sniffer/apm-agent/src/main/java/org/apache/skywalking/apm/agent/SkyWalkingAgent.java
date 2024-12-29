@@ -18,15 +18,29 @@
 
 package org.apache.skywalking.apm.agent;
 
+import java.lang.instrument.Instrumentation;
+import java.security.ProtectionDomain;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.agent.builder.AgentBuilder;
+import net.bytebuddy.agent.builder.SWAgentBuilderDefault;
+import net.bytebuddy.agent.builder.SWDescriptionStrategy;
+import net.bytebuddy.agent.builder.SWNativeMethodStrategy;
 import net.bytebuddy.description.NamedElement;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
+import net.bytebuddy.dynamic.scaffold.MethodGraph;
 import net.bytebuddy.dynamic.scaffold.TypeValidation;
+import org.apache.skywalking.apm.agent.bytebuddy.SWAuxiliaryTypeNamingStrategy;
+import net.bytebuddy.implementation.SWImplementationContextFactory;
 import net.bytebuddy.matcher.ElementMatcher;
 import net.bytebuddy.matcher.ElementMatchers;
 import net.bytebuddy.utility.JavaModule;
+import org.apache.skywalking.apm.agent.bytebuddy.SWMethodGraphCompilerDelegate;
+import org.apache.skywalking.apm.agent.bytebuddy.SWMethodNameTransformer;
 import org.apache.skywalking.apm.agent.core.boot.AgentPackageNotFoundException;
 import org.apache.skywalking.apm.agent.core.boot.ServiceManager;
 import org.apache.skywalking.apm.agent.core.conf.Config;
@@ -34,18 +48,20 @@ import org.apache.skywalking.apm.agent.core.conf.SnifferConfigInitializer;
 import org.apache.skywalking.apm.agent.core.jvm.LoadedLibraryCollector;
 import org.apache.skywalking.apm.agent.core.logging.api.ILog;
 import org.apache.skywalking.apm.agent.core.logging.api.LogManager;
-import org.apache.skywalking.apm.agent.core.plugin.*;
+import org.apache.skywalking.apm.agent.core.plugin.AbstractClassEnhancePluginDefine;
+import org.apache.skywalking.apm.agent.core.plugin.EnhanceContext;
+import org.apache.skywalking.apm.agent.core.plugin.InstrumentDebuggingClass;
+import org.apache.skywalking.apm.agent.core.plugin.PluginBootstrap;
+import org.apache.skywalking.apm.agent.core.plugin.PluginException;
+import org.apache.skywalking.apm.agent.core.plugin.PluginFinder;
 import org.apache.skywalking.apm.agent.core.plugin.bootstrap.BootstrapInstrumentBoost;
-import org.apache.skywalking.apm.agent.core.plugin.bytebuddy.CacheableTransformerDecorator;
+import org.apache.skywalking.apm.agent.core.plugin.interceptor.enhance.DelegateNamingResolver;
 import org.apache.skywalking.apm.agent.core.plugin.jdk9module.JDK9ModuleExporter;
 
-import java.lang.instrument.Instrumentation;
-import java.security.ProtectionDomain;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
-import static net.bytebuddy.matcher.ElementMatchers.*;
+import static net.bytebuddy.matcher.ElementMatchers.nameContains;
+import static net.bytebuddy.matcher.ElementMatchers.nameStartsWith;
+import static net.bytebuddy.matcher.ElementMatchers.not;
+import static org.apache.skywalking.apm.agent.core.conf.Constants.NAME_TRAIT;
 
 /**
  * The main entrance of sky-walking agent, based on javaagent mechanism.
@@ -95,23 +111,39 @@ public class SkyWalkingAgent {
             return;
         }
 
-        // 3.定制化 agent
-        final ByteBuddy byteBuddy = new ByteBuddy().with(TypeValidation.of(Config.Agent.IS_OPEN_DEBUGGING_CLASS));
+        try {
+            installClassTransformer(instrumentation, pluginFinder);
+        } catch (Exception e) {
+            LOGGER.error(e, "Skywalking agent installed class transformer failure.");
+        }
+
+        try {
+            // 组织起所有服务
+            ServiceManager.INSTANCE.boot();
+        } catch (Exception e) {
+            LOGGER.error(e, "Skywalking agent boot failure.");
+        }
+
+        // 按优先级倒序关闭
+        Runtime.getRuntime()
+               .addShutdownHook(new Thread(ServiceManager.INSTANCE::shutdown, "skywalking service shutdown thread"));
+    }
+
+    static void installClassTransformer(Instrumentation instrumentation, PluginFinder pluginFinder) throws Exception {
+        LOGGER.info("Skywalking agent begin to install transformer ...");
 
         // 建造者模式
         // 忽略这些类
-        AgentBuilder agentBuilder = new AgentBuilder.Default(byteBuddy).ignore
-                (
-                        nameStartsWith("net.bytebuddy.")
-                                .or(nameStartsWith("org.slf4j."))
-                                .or(nameStartsWith("org.groovy."))
-                                .or(nameContains("javassist"))
-                                .or(nameContains(".asm."))
-                                .or(nameContains(".reflectasm."))
-                                .or(nameStartsWith("sun.reflect"))
-                                .or(allSkyWalkingAgentExcludeToolkit())
-                                .or(ElementMatchers.isSynthetic())
-                );
+        AgentBuilder agentBuilder = newAgentBuilder().ignore(
+            nameStartsWith("net.bytebuddy.")
+                .or(nameStartsWith("org.slf4j."))
+                .or(nameStartsWith("org.groovy."))
+                .or(nameContains("javassist"))
+                .or(nameContains(".asm."))
+                .or(nameContains(".reflectasm."))
+                .or(nameStartsWith("sun.reflect"))
+                .or(allSkyWalkingAgentExcludeToolkit())
+                .or(ElementMatchers.isSynthetic()));
 
         JDK9ModuleExporter.EdgeClasses edgeClasses = new JDK9ModuleExporter.EdgeClasses();
         try {
@@ -119,8 +151,7 @@ public class SkyWalkingAgent {
             // 将必要的类注入到 BootstrapClassLoader 中
             agentBuilder = BootstrapInstrumentBoost.inject(pluginFinder, instrumentation, agentBuilder, edgeClasses);
         } catch (Exception e) {
-            LOGGER.error(e, "SkyWalking agent inject bootstrap instrumentation failure. Shutting down.");
-            return;
+            throw new Exception("SkyWalking agent inject bootstrap instrumentation failure. Shutting down.", e);
         }
 
         try {
@@ -129,18 +160,7 @@ public class SkyWalkingAgent {
             // openReadEdge 解决 JDK 模块系统的跨模块类访问
             agentBuilder = JDK9ModuleExporter.openReadEdge(instrumentation, agentBuilder, edgeClasses);
         } catch (Exception e) {
-            LOGGER.error(e, "SkyWalking agent open read edge in JDK 9+ failure. Shutting down.");
-            return;
-        }
-
-        // 根据配置决定是否将修改后的字节码保存一份到磁盘/内存上
-        if (Config.Agent.IS_CACHE_ENHANCED_CLASS) {
-            try {
-                agentBuilder = agentBuilder.with(new CacheableTransformerDecorator(Config.Agent.CLASS_CACHE_MODE));
-                LOGGER.info("SkyWalking agent class cache [{}] activated.", Config.Agent.CLASS_CACHE_MODE);
-            } catch (Exception e) {
-                LOGGER.error(e, "SkyWalking agent can't active class cache.");
-            }
+            throw new Exception("SkyWalking agent open read edge in JDK 9+ failure. Shutting down.", e);
         }
 
         agentBuilder.type(pluginFinder.buildMatch()) // 指定 ByteBuddy 要拦截的类
@@ -152,16 +172,23 @@ public class SkyWalkingAgent {
 
         PluginFinder.pluginInitCompleted();
 
-        try {
-            // 组织起所有服务
-            ServiceManager.INSTANCE.boot();
-        } catch (Exception e) {
-            LOGGER.error(e, "Skywalking agent boot failure.");
-        }
+        LOGGER.info("Skywalking agent transformer has installed.");
+    }
 
-        // 按优先级倒序关闭
-        Runtime.getRuntime()
-                .addShutdownHook(new Thread(ServiceManager.INSTANCE::shutdown, "skywalking service shutdown thread"));
+    /**
+     * 3.定制化 agent
+     * Create a new agent builder through customized {@link ByteBuddy} powered by
+     * {@link SWAuxiliaryTypeNamingStrategy} {@link DelegateNamingResolver} {@link SWMethodNameTransformer} and {@link SWImplementationContextFactory}
+     */
+    private static AgentBuilder newAgentBuilder() {
+        final ByteBuddy byteBuddy = new ByteBuddy()
+                .with(TypeValidation.of(Config.Agent.IS_OPEN_DEBUGGING_CLASS))
+                .with(new SWAuxiliaryTypeNamingStrategy(NAME_TRAIT))
+                .with(new SWImplementationContextFactory(NAME_TRAIT))
+                .with(new SWMethodGraphCompilerDelegate(MethodGraph.Compiler.DEFAULT));
+
+        return new SWAgentBuilderDefault(byteBuddy, new SWNativeMethodStrategy(NAME_TRAIT))
+                .with(new SWDescriptionStrategy(NAME_TRAIT));
     }
 
     private static class Transformer implements AgentBuilder.Transformer {
@@ -185,7 +212,7 @@ public class SkyWalkingAgent {
                 for (AbstractClassEnhancePluginDefine define : pluginDefines) {
                     // 核心调用 define，返回一个可能为新的 builder
                     DynamicType.Builder<?> possibleNewBuilder = define.define(
-                            typeDescription, newBuilder, classLoader, context);
+                        typeDescription, newBuilder, classLoader, context);
                     if (possibleNewBuilder != null) {
                         newBuilder = possibleNewBuilder;
                     }

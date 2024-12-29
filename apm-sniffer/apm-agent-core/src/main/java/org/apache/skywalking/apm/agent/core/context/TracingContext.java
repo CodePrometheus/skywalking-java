@@ -41,8 +41,9 @@ import org.apache.skywalking.apm.agent.core.context.trace.TraceSegment;
 import org.apache.skywalking.apm.agent.core.context.trace.TraceSegmentRef;
 import org.apache.skywalking.apm.agent.core.logging.api.ILog;
 import org.apache.skywalking.apm.agent.core.logging.api.LogManager;
-import org.apache.skywalking.apm.agent.core.profile.ProfileStatusReference;
+import org.apache.skywalking.apm.agent.core.profile.ProfileStatusContext;
 import org.apache.skywalking.apm.agent.core.profile.ProfileTaskExecutionService;
+import org.apache.skywalking.apm.agent.core.so11y.AgentSo11y;
 import org.apache.skywalking.apm.util.StringUtil;
 
 import static org.apache.skywalking.apm.agent.core.conf.Config.Agent.CLUSTER;
@@ -112,7 +113,7 @@ public class TracingContext implements AbstractTracerContext {
     /**
      * profile status
      */
-    private final ProfileStatusReference profileStatus;
+    private final ProfileStatusContext profileStatus;
     @Getter(AccessLevel.PACKAGE)
     private final CorrelationContext correlationContext;
     @Getter(AccessLevel.PACKAGE)
@@ -223,7 +224,8 @@ public class TracingContext implements AbstractTracerContext {
             getPrimaryTraceId(),
             primaryEndpoint.getName(),
             this.correlationContext,
-            this.extensionContext
+            this.extensionContext,
+            this.profileStatus
         );
 
         return snapshot;
@@ -244,6 +246,9 @@ public class TracingContext implements AbstractTracerContext {
             this.correlationContext.continued(snapshot);
             this.extensionContext.continued(snapshot);
             this.extensionContext.handle(this.activeSpan());
+            if (this.profileStatus.continued(snapshot)) {
+                PROFILE_TASK_EXECUTION_SERVICE.continueProfiling(this, this.segment.getTraceSegmentId());
+            }
         }
     }
 
@@ -426,6 +431,14 @@ public class TracingContext implements AbstractTracerContext {
         return primaryEndpoint.getName();
     }
 
+    @Override
+    public AbstractTracerContext forceIgnoring() {
+        for (AbstractSpan span: activeSpanStack) {
+            span.forceIgnoring();
+        }
+        return new IgnoredTracerContext(activeSpanStack.size());
+    }
+
     /**
      * Re-check current trace need profiling, encase third part plugin change the operation name.
      *
@@ -459,7 +472,12 @@ public class TracingContext implements AbstractTracerContext {
             }
 
             if (isFinishedInMainThread && (!isRunningInAsyncMode || asyncSpanCounter == 0)) {
-                TraceSegment finishedSegment = segment.finish(isLimitMechanismWorking());
+                boolean limitMechanismWorking = isLimitMechanismWorking();
+                if (limitMechanismWorking) {
+                    AgentSo11y.measureLeakedTracingContext(false);
+                }
+                AgentSo11y.measureTracingContextCompletion(false);
+                TraceSegment finishedSegment = segment.finish(limitMechanismWorking);
                 TracingContext.ListenerManager.notifyFinish(finishedSegment);
                 running = false;
             }
@@ -582,7 +600,7 @@ public class TracingContext implements AbstractTracerContext {
         return this.createTime;
     }
 
-    public ProfileStatusReference profileStatus() {
+    public ProfileStatusContext profileStatus() {
         return this.profileStatus;
     }
 

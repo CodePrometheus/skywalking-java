@@ -19,6 +19,9 @@
 package org.apache.skywalking.apm.plugin.redisson.v3;
 
 import io.netty.channel.Channel;
+
+import java.util.Objects;
+import java.util.stream.Collectors;
 import org.apache.skywalking.apm.agent.core.context.ContextManager;
 import org.apache.skywalking.apm.agent.core.context.tag.Tags;
 import org.apache.skywalking.apm.agent.core.context.trace.AbstractSpan;
@@ -27,8 +30,8 @@ import org.apache.skywalking.apm.agent.core.logging.api.ILog;
 import org.apache.skywalking.apm.agent.core.logging.api.LogManager;
 import org.apache.skywalking.apm.agent.core.plugin.interceptor.enhance.EnhancedInstance;
 import org.apache.skywalking.apm.agent.core.plugin.interceptor.enhance.InstanceConstructorInterceptor;
-import org.apache.skywalking.apm.agent.core.plugin.interceptor.enhance.InstanceMethodsAroundInterceptor;
-import org.apache.skywalking.apm.agent.core.plugin.interceptor.enhance.MethodInterceptResult;
+import org.apache.skywalking.apm.agent.core.plugin.interceptor.enhance.v2.InstanceMethodsAroundInterceptorV2;
+import org.apache.skywalking.apm.agent.core.plugin.interceptor.enhance.v2.MethodInvocationContext;
 import org.apache.skywalking.apm.network.trace.component.ComponentsDefine;
 import org.apache.skywalking.apm.plugin.redisson.v3.util.ClassUtil;
 import org.apache.skywalking.apm.util.StringUtil;
@@ -41,17 +44,17 @@ import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.util.Optional;
 
-public class RedisConnectionMethodInterceptor implements InstanceMethodsAroundInterceptor, InstanceConstructorInterceptor {
+public class RedisConnectionMethodInterceptor implements InstanceMethodsAroundInterceptorV2, InstanceConstructorInterceptor {
 
     private static final ILog LOGGER = LogManager.getLogger(RedisConnectionMethodInterceptor.class);
 
     private static final String ABBR = "...";
     private static final String QUESTION_MARK = "?";
     private static final String DELIMITER_SPACE = " ";
+    public static final Object STOP_SPAN_FLAG = new Object();
 
     @Override
-    public void beforeMethod(EnhancedInstance objInst, Method method, Object[] allArguments, Class<?>[] argumentsTypes,
-        MethodInterceptResult result) throws Throwable {
+    public void beforeMethod(EnhancedInstance objInst, Method method, Object[] allArguments, Class<?>[] argumentsTypes, MethodInvocationContext context) throws Throwable {
         String peer = (String) objInst.getSkyWalkingDynamicField();
 
         RedisConnection connection = (RedisConnection) objInst;
@@ -66,14 +69,22 @@ public class RedisConnectionMethodInterceptor implements InstanceMethodsAroundIn
         if (allArguments[0] instanceof CommandsData) {
             operationName = operationName + "BATCH_EXECUTE";
             command = "BATCH_EXECUTE";
+            if (RedissonPluginConfig.Plugin.Redisson.SHOW_BATCH_COMMANDS) {
+                command += ":" + showBatchCommands((CommandsData) allArguments[0]);
+            }
         } else if (allArguments[0] instanceof CommandData) {
             CommandData commandData = (CommandData) allArguments[0];
             command = commandData.getCommand().getName();
-            operationName = operationName + command;
-            arguments = commandData.getParams();
+            if ("PING".equals(command) && !RedissonPluginConfig.Plugin.Redisson.SHOW_PING_COMMAND) {
+                return;
+            } else {
+                operationName = operationName + command;
+                arguments = commandData.getParams();
+            }
         }
 
         AbstractSpan span = ContextManager.createExitSpan(operationName, peer);
+        context.setContext(STOP_SPAN_FLAG);
         span.setComponent(ComponentsDefine.REDISSON);
         Tags.CACHE_TYPE.set(span, "Redis");
         Tags.CACHE_INSTANCE.set(span, dbInstance);
@@ -85,17 +96,19 @@ public class RedisConnectionMethodInterceptor implements InstanceMethodsAroundIn
     }
 
     @Override
-    public Object afterMethod(EnhancedInstance objInst, Method method, Object[] allArguments, Class<?>[] argumentsTypes,
-        Object ret) throws Throwable {
-        ContextManager.stopSpan();
+    public Object afterMethod(EnhancedInstance objInst, Method method, Object[] allArguments, Class<?>[] argumentsTypes, Object ret, MethodInvocationContext context) throws Throwable {
+        if (Objects.nonNull(context.getContext())) {
+            ContextManager.stopSpan();
+        }
         return ret;
     }
 
     @Override
-    public void handleMethodException(EnhancedInstance objInst, Method method, Object[] allArguments,
-        Class<?>[] argumentsTypes, Throwable t) {
-        AbstractSpan span = ContextManager.activeSpan();
-        span.log(t);
+    public void handleMethodException(EnhancedInstance objInst, Method method, Object[] allArguments, Class<?>[] argumentsTypes, Throwable t, MethodInvocationContext context) {
+        if (Objects.nonNull(context.getContext())) {
+            AbstractSpan span = ContextManager.activeSpan();
+            span.log(t);
+        }
     }
 
     @Override
@@ -142,5 +155,12 @@ public class RedisConnectionMethodInterceptor implements InstanceMethodsAroundIn
             return Optional.of("write");
         }
         return Optional.empty();
+    }
+
+    private String showBatchCommands(CommandsData commandsData) {
+        return commandsData.getCommands()
+                           .stream()
+                           .map(data -> data.getCommand().getName())
+                           .collect(Collectors.joining(";"));
     }
 }

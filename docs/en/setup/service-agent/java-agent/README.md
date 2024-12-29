@@ -1,12 +1,14 @@
 # Setup java agent
 
-1. Agent is available for JDK 8 - 17.
+1. Agent is available for JDK 8 - 21.
 1. Find `agent` folder in SkyWalking release package
 1. Set `agent.service_name` in `config/agent.config`. Could be any String in English.
 1. Set `collector.backend_service` in `config/agent.config`. Default point to `127.0.0.1:11800`, only works for local
    backend.
 1. Add `-javaagent:/path/to/skywalking-package/agent/skywalking-agent.jar` to JVM argument. And make sure to add it
    before the `-jar` argument.
+
+**Require SkyWalking OAP server 9.7.0+ if the agent works on the JRE using ZGC.**
 
 The agent release dist is included in Apache [official release](http://skywalking.apache.org/downloads/). New agent
 package looks like this.
@@ -30,6 +32,10 @@ package looks like this.
          .....
     +-- bootstrap-plugins
          jdk-http-plugin.jar
+         .....
+    +-- expired-plugins
+         # Expired plugins are moved to this folder. No guarantee of working and maintenance.
+         apm-impala-2.6.x-plugin.jar
          .....
     +-- logs
     skywalking-agent.jar

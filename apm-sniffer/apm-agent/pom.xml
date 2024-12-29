@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.apache.skywalking</groupId>
         <artifactId>java-agent-sniffer</artifactId>
-        <version>8.15.0-SNAPSHOT</version>
+        <version>9.4.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>apm-agent</artifactId>
@@ -45,6 +45,11 @@
         <dependency>
             <groupId>org.apache.skywalking</groupId>
             <artifactId>apm-agent-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.skywalking</groupId>
+            <artifactId>bytebuddy-patch</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -83,9 +88,11 @@
                                     <exclude>com.google.*:*</exclude>
                                     <exclude>com.google.guava:guava</exclude>
                                     <exclude>org.checkerframework:checker-compat-qual</exclude>
+                                    <exclude>org.checkerframework:checker-qual</exclude>
                                     <exclude>org.codehaus.mojo:animal-sniffer-annotations</exclude>
                                     <exclude>io.perfmark:*</exclude>
                                     <exclude>org.slf4j:*</exclude>
+                                    <exclude>tools.profiler:async-profiler</exclude>
                                 </excludes>
                             </artifactSet>
                             <relocations>
@@ -99,6 +106,12 @@
                                     <artifact>net.bytebuddy:byte-buddy</artifact>
                                     <excludes>
                                         <exclude>META-INF/versions/9/module-info.class</exclude>
+                                    </excludes>
+                                </filter>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>**/*.proto</exclude>
                                     </excludes>
                                 </filter>
                             </filters>

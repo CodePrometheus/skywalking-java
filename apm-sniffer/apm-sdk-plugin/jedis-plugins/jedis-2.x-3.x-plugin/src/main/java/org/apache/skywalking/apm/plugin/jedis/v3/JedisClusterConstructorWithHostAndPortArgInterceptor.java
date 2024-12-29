@@ -22,9 +22,8 @@ import org.apache.skywalking.apm.agent.core.plugin.interceptor.enhance.InstanceC
 import redis.clients.jedis.HostAndPort;
 
 public class JedisClusterConstructorWithHostAndPortArgInterceptor implements InstanceConstructorInterceptor {
-
     @Override
-    public void onConstruct(EnhancedInstance objInst, Object[] allArguments) {
+    public void onConstruct(EnhancedInstance objInst, Object[] allArguments) throws Throwable {
         HostAndPort hostAndPort = (HostAndPort) allArguments[0];
         objInst.setSkyWalkingDynamicField(hostAndPort.getHost() + ":" + hostAndPort.getPort());
     }

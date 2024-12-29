@@ -196,7 +196,7 @@ public class ComponentsDefine {
     public static final OfficialComponent DOLPHIN_SCHEDULER = new OfficialComponent(106, "dolphinscheduler");
 
     public static final OfficialComponent JSON_RPC = new OfficialComponent(107, "JsonRpc");
-  
+
     public static final OfficialComponent SEATA = new OfficialComponent(108, "Seata");
 
     public static final OfficialComponent MYBATIS = new OfficialComponent(109, "MyBatis");
@@ -204,7 +204,7 @@ public class ComponentsDefine {
     public static final OfficialComponent NEO4J = new OfficialComponent(112, "Neo4j");
 
     public static final OfficialComponent SENTINEL = new OfficialComponent(113, "Sentinel");
-  
+
     public static final OfficialComponent GUAVA_CACHE = new OfficialComponent(114, "GuavaCache");
 
     public static final OfficialComponent ALIBABA_DRUID = new OfficialComponent(115, "AlibabaDruid");
@@ -233,4 +233,31 @@ public class ComponentsDefine {
 
     public static final OfficialComponent MICROMETER = new OfficialComponent(141, "Micrometer");
 
+    public static final OfficialComponent JERSEY = new OfficialComponent(146, "Jersey");
+
+    public static final OfficialComponent GRIZZLY = new OfficialComponent(147, "Grizzly");
+
+    public static final OfficialComponent WEBSPHERE = new OfficialComponent(148, "WebSphere");
+
+    public static final OfficialComponent AEROSPIKE = new OfficialComponent(149, "Aerospike");
+
+    public static final OfficialComponent NACOS = new OfficialComponent(150, "Nacos");
+
+    public static final OfficialComponent NETTY_HTTP = new OfficialComponent(151, "Netty-http");
+
+    public static final OfficialComponent C3P0 = new OfficialComponent(152, "c3p0");
+
+    public static final OfficialComponent DERBY_JDBC_DRIVER = new OfficialComponent(153, "Derby-jdbc-driver");
+
+    public static final OfficialComponent SQLITE_JDBC_DRIVER = new OfficialComponent(154, "Sqlite-jdbc-driver");
+
+    public static final OfficialComponent DB2_JDBC_DRIVER = new OfficialComponent(155, "Db2-jdbc-driver");
+
+    public static final OfficialComponent SYBASE_JDBC_DRIVER = new OfficialComponent(156, "Sybase-jdbc-driver");
+
+    public static final OfficialComponent OCEANBASE_JDBC_DRIVER = new OfficialComponent(157, "OceanBase-jdbc-driver");
+
+    public static final OfficialComponent SOLON_MVC = new OfficialComponent(158, "SolonMVC");
+
+    public static final OfficialComponent CAFFEINE = new OfficialComponent(160, "Caffeine");
 }

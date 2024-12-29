@@ -25,7 +25,6 @@ import org.apache.skywalking.apm.agent.core.logging.core.LogLevel;
 import org.apache.skywalking.apm.agent.core.logging.core.LogOutput;
 import org.apache.skywalking.apm.agent.core.logging.core.ResolverType;
 import org.apache.skywalking.apm.agent.core.logging.core.WriterFactory;
-import org.apache.skywalking.apm.agent.core.plugin.bytebuddy.ClassCacheMode;
 import org.apache.skywalking.apm.util.Length;
 
 /**
@@ -110,19 +109,6 @@ public class Config {
          * may ask for these files in order to resolve compatible problem.
          */
         public static boolean IS_OPEN_DEBUGGING_CLASS = false;
-
-        /**
-         * If true, SkyWalking agent will cache all instrumented classes to memory or disk files (decided by class cache
-         * mode), allow other javaagent to enhance those classes that enhanced by SkyWalking agent.
-         */
-        public static boolean IS_CACHE_ENHANCED_CLASS = false;
-
-        /**
-         * The instrumented classes cache mode: MEMORY or FILE MEMORY: cache class bytes to memory, if instrumented
-         * classes is too many or too large, it may take up more memory FILE: cache class bytes in `/class-cache`
-         * folder, automatically clean up cached class files when the application exits
-         */
-        public static ClassCacheMode CLASS_CACHE_MODE = ClassCacheMode.MEMORY;
 
         /**
          * The identifier of the instance
@@ -242,9 +228,14 @@ public class Config {
         public static boolean ACTIVE = true;
 
         /**
-         * Parallel monitor segment count
+         * Parallel monitor endpoint thread count
          */
         public static int MAX_PARALLEL = 5;
+
+        /**
+         * Max monitoring sub-tasks count of one single endpoint access
+         */
+        public static int MAX_ACCEPT_SUB_PARALLEL = 5;
 
         /**
          * Max monitor segment time(minutes), if current segment monitor time out of limit, then stop it.
@@ -260,6 +251,33 @@ public class Config {
          * Snapshot transport to backend buffer size
          */
         public static int SNAPSHOT_TRANSPORT_BUFFER_SIZE = 500;
+    }
+
+    public static class AsyncProfiler {
+        /**
+         * If true, async profiler will be enabled when user creates a new async profiler task.
+         * If false, it will be disabled.
+         * The default value is true.
+         */
+        public static boolean ACTIVE = true;
+
+        /**
+         * Max execution time(second) for the Async Profiler. The task will be stopped even if a longer time is specified.
+         * default 20min.
+         */
+        public static int MAX_DURATION = 1200;
+
+        /**
+         * Path for the JFR outputs from the Async Profiler.
+         * If the parameter is not empty, the file will be created in the specified directory,
+         * otherwise the Files.createTemp method will be used to create the file.
+         */
+        public static String OUTPUT_PATH = "";
+
+        /**
+         * The size of the chunk when uploading jfr
+         */
+        public static final int DATA_CHUNK_SIZE = 1024 * 1024;
     }
 
     public static class Meter {

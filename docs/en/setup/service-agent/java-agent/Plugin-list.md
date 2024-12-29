@@ -1,4 +1,5 @@
 # Skywalking Agent List
+- aerospike
 - activemq-5.x
 - armeria-063-084
 - armeria-085
@@ -53,6 +54,7 @@
 - jetty-client-9.x
 - jetty-server-9.x
 - kafka-0.11.x/1.x/2.x
+- kafka-3.7.x
 - kotlin-coroutine
 - lettuce-5.x
 - light4j
@@ -67,7 +69,9 @@
 - mysql-5.x
 - mysql-6.x
 - mysql-8.x
+- nacos-client-2.x  
 - netty-socketio
+- netty-http-4.1.x
 - nutz-http-1.x
 - nutz-mvc-annotation-1.x
 - okhttp-3.x
@@ -81,8 +85,11 @@
 - redisson-3.x
 - resteasy-server-3.x
 - resteasy-server-4.x
+- resteasy-server-6.x
 - rocketMQ-3.x
 - rocketMQ-4.x
+- rocketMQ-5.x 
+- rocketMQ-client-java-5.x
 - sentinel-1.x
 - servicecomb-2.x
 - sharding-sphere-3.x
@@ -155,5 +162,21 @@
 - hutool-http-5.x
 - micronaut-http-client-3.2.x-3.6.x
 - micronaut-http-server-3.2.x-3.6.x
-- nats-client-2.14.x-2.15.x
+- nats-client-2.14.x-2.16.5
 - impala-jdbc-2.6.x
+- jdk-forkjoinpool-plugin
+- jetty-thread-pool
+- jersey-2.x
+- jersey-3.x
+- grizzly-2.3.x-4.x
+- grizzly-2.3.x-4.x-threadpool
+- jetty-server-11.x
+- jetty-client-11.x
+- websphere-liberty-23.x
+- spring-cloud-gateway-4.x
+- spring-webflux-6.x
+- spring-webflux-6.x-webclient
+- activemq-artemis-jakarta-client-2.x
+- c3p0-0.9.x
+- solon-2.x
+- caffeine-3.x

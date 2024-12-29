@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.apache.skywalking</groupId>
         <artifactId>java-agent-sniffer</artifactId>
-        <version>8.15.0-SNAPSHOT</version>
+        <version>9.4.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>apm-sdk-plugin</artifactId>
@@ -66,6 +66,7 @@
         <module>hystrix-1.x-plugin</module>
         <module>sofarpc-plugin</module>
         <module>activemq-5.x-plugin</module>
+        <module>elasticsearch-common</module>
         <module>elasticsearch-5.x-plugin</module>
         <module>elasticsearch-6.x-plugin</module>
         <module>elasticsearch-7.x-plugin</module>
@@ -122,10 +123,21 @@
         <module>guava-eventbus-plugin</module>
         <module>hutool-plugins</module>
         <module>micronaut-plugins</module>
-        <module>nats-2.14.x-2.15.x-plugin</module>
+        <module>nats-2.14.x-2.16.5-plugin</module>
         <module>jedis-plugins</module>
-        <module>impala-jdbc-2.6.x-plugin</module>
         <module>apm-armeria-plugins</module>
+        <module>jetty-thread-pool-plugin</module>
+        <module>jersey-2.x-plugin</module>
+        <module>jersey-3.x-plugin</module>
+        <module>grizzly-2.3.x-4.x-plugin</module>
+        <module>grizzly-2.3.x-4.x-work-threadpool-plugin</module>
+        <module>rocketMQ-5.x-plugin</module>
+        <module>websphere-liberty-23.x-plugin</module>
+        <module>aerospike-plugin</module>
+        <module>rocketMQ-client-java-5.x-plugin</module>
+        <module>activemq-artemis-jakarta-client-2.x-plugin</module>
+        <module>c3p0-0.9.x-plugin</module>
+        <module>solon-2.x-plugin</module>
     </modules>
     <packaging>pom</packaging>
 

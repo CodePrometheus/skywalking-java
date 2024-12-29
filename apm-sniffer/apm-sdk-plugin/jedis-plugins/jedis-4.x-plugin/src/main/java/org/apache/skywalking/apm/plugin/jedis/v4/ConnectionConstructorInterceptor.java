@@ -26,6 +26,8 @@ public class ConnectionConstructorInterceptor implements InstanceConstructorInte
     @Override
     public void onConstruct(EnhancedInstance objInst, Object[] allArguments) throws Throwable {
         HostAndPort hostAndPort = ((DefaultJedisSocketFactory) allArguments[0]).getHostAndPort();
-        objInst.setSkyWalkingDynamicField(hostAndPort.getHost() + ":" + hostAndPort.getPort());
+        ConnectionInformation connectionData = new ConnectionInformation();
+        connectionData.setActualTarget(hostAndPort.toString());
+        objInst.setSkyWalkingDynamicField(connectionData);
     }
 }
