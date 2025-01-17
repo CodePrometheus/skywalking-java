@@ -48,8 +48,10 @@ public class PluginBootstrap {
      * @return plugin definition list.
      */
     public List<AbstractClassEnhancePluginDefine> loadPlugins() throws AgentPackageNotFoundException {
+        // 1.初始化 AgentClassLoader
         AgentClassLoader.initDefaultLoader(); // sw 自定义的类加载器
 
+        // 2.使用 AgentClassLoader 读取插件定义文件 skywalking-plugin.def
         PluginResourcesResolver resolver = new PluginResourcesResolver();
         List<URL> resources = resolver.getResources();
 
@@ -60,6 +62,7 @@ public class PluginBootstrap {
 
         for (URL pluginUrl : resources) {
             try {
+                // 3.读取插件定义文件 skywalking-plugin.def 内容，封装成 PluginDefine
                 PluginCfg.INSTANCE.load(pluginUrl.openStream());
             } catch (Throwable t) {
                 LOGGER.error(t, "plugin file [{}] init failure.", pluginUrl);
@@ -73,6 +76,13 @@ public class PluginBootstrap {
         for (PluginDefine pluginDefine : pluginClassList) {
             try {
                 LOGGER.debug("loading plugin class {}.", pluginDefine.getDefineClass());
+                /**
+                 * 4.使用 AgentClassLoader 加载并实例化插件定义类
+                 * JVM底层会调用 ClassLoader.loadClass 方法，根据类加载器的委托机制(即先委托父类加载器加载类，如果父类加载器无法加载，则由子类加载器加载)
+                 * ClassLoader 的 loadClass 方法的内部实现会调用子类 AgentClassLoader 的 findClass 方法
+                 * 因为 AgentClassLoader 的所有父加载器都不知道怎么去加载这些插件定义类，只有 AgentClassLoader 知道如何去找
+                 * {@link AgentClassLoader#findClass(String name)}
+                 */
                 AbstractClassEnhancePluginDefine plugin = (AbstractClassEnhancePluginDefine) Class.forName(pluginDefine.getDefineClass(), true, AgentClassLoader
                     .getDefault()).newInstance();
                 plugin.setPluginName(pluginDefine.getName());

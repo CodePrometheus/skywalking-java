@@ -24,6 +24,7 @@ import org.apache.skywalking.apm.agent.core.boot.AgentPackagePath;
 import org.apache.skywalking.apm.agent.core.boot.PluginConfig;
 import org.apache.skywalking.apm.agent.core.conf.Config;
 import org.apache.skywalking.apm.agent.core.conf.SnifferConfigInitializer;
+import org.apache.skywalking.apm.agent.core.context.ContextManager;
 import org.apache.skywalking.apm.agent.core.logging.api.ILog;
 import org.apache.skywalking.apm.agent.core.logging.api.LogManager;
 import org.apache.skywalking.apm.agent.core.plugin.PluginBootstrap;
@@ -45,20 +46,24 @@ import java.util.jar.JarFile;
 /**
  * The <code>AgentClassLoader</code> represents a classloader, which is in charge of finding plugins and interceptors.
  * 负责查找插件和拦截器
+ * 自定义的类加载器，用于加载指定目录的 jar 插件（默认加载的插件目录 plugins 和 activations）
+ * AgentClassLoader 继承 ClassLoader，重写 findClass 方法
  */
 public class AgentClassLoader extends ClassLoader {
 
     static {
-        /*
+        /**
          * Try to solve the classloader dead lock. See https://github.com/apache/skywalking/pull/2016
          * 开启类加载器并行加载模式
          * 1.6 jvm 是串行加载 将 classLoad 自身作为锁
          * -----
          * 1.7 并行加载，实现原理是将锁的粒度变小
-         *  Class<? extends ClassLoader> callerClass =
+         * {@link ClassLoader#registerAsParallelCapable()}
+            Class<? extends ClassLoader> callerClass =
             Reflection.getCallerClass().asSubclass(ClassLoader.class); 进行类转换，将调用方法的类转为 ClassLoader 的子类
-            *
-            * static boolean register(Class<? extends ClassLoader> c) {
+
+            {@link ParallelLoaders#register}
+              static boolean register(Class<? extends ClassLoader> c) {
                 synchronized (loaderTypes) { // loaderTypes 所有具有并行能力的类加载器
                     if (loaderTypes.contains(c.getSuperclass())) {
                         // 判断是否当前类的父类是否具有并行能力
@@ -108,6 +113,8 @@ public class AgentClassLoader extends ClassLoader {
         if (DEFAULT_LOADER == null) {
             synchronized (AgentClassLoader.class) {
                 if (DEFAULT_LOADER == null) {
+                    // PluginBootstrap 调用该方法的时候，PluginBootstrap 已经被加载了
+                    // 将 PluginBootstrap 作为父类加载器
                     DEFAULT_LOADER = new AgentClassLoader(PluginBootstrap.class.getClassLoader());
                 }
             }
@@ -123,6 +130,9 @@ public class AgentClassLoader extends ClassLoader {
         Config.Plugin.MOUNT.forEach(mountFolder -> classpath.add(new File(agentDictionary, mountFolder)));
     }
 
+    /**
+     * Class.forName(name, true, AgentClassLoader.getDefault()) 使用 AgentClassLoader 类加载器时，会调用这个 findClass 方法
+     */
     @Override
     protected Class<?> findClass(String name) throws ClassNotFoundException {
         List<Jar> allJars = getAllJars();

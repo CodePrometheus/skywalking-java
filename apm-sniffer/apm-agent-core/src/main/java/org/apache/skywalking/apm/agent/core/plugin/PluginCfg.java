@@ -54,6 +54,8 @@ public enum PluginCfg {
                         continue;
                     }
                     // kv 转化为对象 <name, defineClass>
+                    // 读取插件定义文件的每一行，比如 dubbo=org.apache.skywalking.apm.plugin.asf.dubbo.DubboInstrumentation
+                    // 将每一行的 name=class 封装成 PluginDefine
                     PluginDefine plugin = PluginDefine.build(pluginDefine);
                     pluginClassList.add(plugin);
                 } catch (IllegalPluginDefineException e) {

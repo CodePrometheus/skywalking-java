@@ -54,10 +54,12 @@ import static org.apache.skywalking.apm.agent.core.conf.Config.Agent.CLUSTER;
  * <p>
  * In opentracing concept, it means, all spans in a segment tracing context(thread) are CHILD_OF relationship, but no
  * FOLLOW_OF.
+ * 在一个 segment 里面，所有的 span 是 FOLLOW_OF 关系
  * <p>
  * In skywalking core concept, FOLLOW_OF is an abstract concept when cross-process MQ or cross-thread async/batch tasks
  * happen, we used {@link TraceSegmentRef} for these scenarios. Check {@link TraceSegmentRef} which is from {@link
  * ContextCarrier} or {@link ContextSnapshot}.
+ * 在 sw 里面，FOLLOW_OF 是一个抽象概念，当跨进程 MQ 或跨线程异步/批处理任务发生时，我们使用 TraceSegmentRef 来处理这些场景
  * <p>
  * TracingContext 管理
  * 1.当前 segment 和自己前后的 segment 的引用 TraceSegmentRef
