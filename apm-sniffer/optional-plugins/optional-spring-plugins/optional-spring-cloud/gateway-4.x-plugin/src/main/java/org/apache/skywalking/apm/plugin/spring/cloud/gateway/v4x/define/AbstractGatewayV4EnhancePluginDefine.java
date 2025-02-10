@@ -17,7 +17,14 @@
 
 package org.apache.skywalking.apm.plugin.spring.cloud.gateway.v4x.define;
 
+import org.apache.skywalking.apm.agent.core.plugin.WitnessMethod;
 import org.apache.skywalking.apm.agent.core.plugin.interceptor.enhance.ClassInstanceMethodsEnhancePluginDefine;
+
+import java.util.Collections;
+import java.util.List;
+
+import static net.bytebuddy.matcher.ElementMatchers.named;
+import static net.bytebuddy.matcher.ElementMatchers.returns;
 
 /**
  * This abstract class defines the <code>witnessClasses()</code> method,
@@ -31,5 +38,13 @@ public abstract class AbstractGatewayV4EnhancePluginDefine extends ClassInstance
     @Override
     protected String[] witnessClasses() {
         return new String[]{"org.springframework.cloud.gateway.filter.factory.cache.LocalResponseCacheProperties"};
+    }
+
+    @Override
+    protected List<WitnessMethod> witnessMethods() {
+        return Collections.singletonList(
+                new WitnessMethod("org.springframework.cloud.gateway.config.LocalResponseCacheAutoConfiguration",
+                        named("responseCacheSizeWeigher").
+                                and(returns(named("org.springframework.cloud.gateway.filter.factory.cache.ResponseCacheSizeWeigher")))));
     }
 }

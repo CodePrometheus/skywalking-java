@@ -19,43 +19,56 @@
 package org.apache.skywalking.apm.plugin.undertow.worker.thread.pool.define;
 
 import static net.bytebuddy.matcher.ElementMatchers.any;
-import static org.apache.skywalking.apm.agent.core.plugin.match.HierarchyMatch.byHierarchyMatch;
-import static org.apache.skywalking.apm.agent.core.plugin.match.PrefixMatch.nameStartsWith;
+import static net.bytebuddy.matcher.ElementMatchers.named;
+import static org.apache.skywalking.apm.agent.core.plugin.match.NameMatch.byName;
 
+import java.util.Collections;
+import java.util.List;
 import net.bytebuddy.description.method.MethodDescription;
 import net.bytebuddy.matcher.ElementMatcher;
+import org.apache.skywalking.apm.agent.core.plugin.WitnessMethod;
 import org.apache.skywalking.apm.agent.core.plugin.interceptor.ConstructorInterceptPoint;
 import org.apache.skywalking.apm.agent.core.plugin.interceptor.InstanceMethodsInterceptPoint;
 import org.apache.skywalking.apm.agent.core.plugin.interceptor.StaticMethodsInterceptPoint;
 import org.apache.skywalking.apm.agent.core.plugin.interceptor.enhance.ClassEnhancePluginDefine;
 import org.apache.skywalking.apm.agent.core.plugin.match.ClassMatch;
-import org.apache.skywalking.apm.agent.core.plugin.match.logical.LogicalMatchOperation;
 
+/**
+ * ThreadPoolExecutor implemented xnio worker task pool before 3.6.0
+ */
 public class UndertowWorkerThreadPoolInstrumentation extends ClassEnhancePluginDefine {
 
-    private static final String THREAD_POOL_EXECUTOR_CLASS = "java.util.concurrent.ThreadPoolExecutor";
+    private static final String THREAD_POOL_EXECUTOR_CLASS = "org.xnio.XnioWorker$TaskPool";
 
     private static final String UNDERTOW_WORKER_THREAD_POOL_INTERCEPT = "org.apache.skywalking.apm.plugin.undertow.worker.thread.pool.UndertowWorkerThreadPoolConstructorIntercept";
 
     @Override
+    protected List<WitnessMethod> witnessMethods() {
+        return Collections.singletonList(new WitnessMethod(
+            "org.xnio.XnioWorker$TaskPool",
+            named("terminated")
+        ));
+    }
+
+    @Override
     protected ClassMatch enhanceClass() {
-        return LogicalMatchOperation.and(nameStartsWith("org.xnio"), byHierarchyMatch(THREAD_POOL_EXECUTOR_CLASS));
+        return byName(THREAD_POOL_EXECUTOR_CLASS);
     }
 
     @Override
     public ConstructorInterceptPoint[] getConstructorsInterceptPoints() {
-        return new ConstructorInterceptPoint[]{
-                new ConstructorInterceptPoint() {
-                    @Override
-                    public ElementMatcher<MethodDescription> getConstructorMatcher() {
-                        return any();
-                    }
-
-                    @Override
-                    public String getConstructorInterceptor() {
-                        return UNDERTOW_WORKER_THREAD_POOL_INTERCEPT;
-                    }
+        return new ConstructorInterceptPoint[] {
+            new ConstructorInterceptPoint() {
+                @Override
+                public ElementMatcher<MethodDescription> getConstructorMatcher() {
+                    return any();
                 }
+
+                @Override
+                public String getConstructorInterceptor() {
+                    return UNDERTOW_WORKER_THREAD_POOL_INTERCEPT;
+                }
+            }
         };
     }
 
