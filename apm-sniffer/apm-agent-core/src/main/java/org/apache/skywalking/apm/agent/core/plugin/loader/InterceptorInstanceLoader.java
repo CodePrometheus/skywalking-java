@@ -36,14 +36,18 @@ public class InterceptorInstanceLoader {
 
     private static ConcurrentHashMap<String, Object> INSTANCE_CACHE = new ConcurrentHashMap<String, Object>();
     private static ReentrantLock INSTANCE_LOAD_LOCK = new ReentrantLock();
+    // key: 加载当前插件要拦截的那个类的 类加载器
+    // value: 既能加载插件拦截器，又能加载要拦截的那个类的 类加载器
     private static Map<ClassLoader, ClassLoader> EXTEND_PLUGIN_CLASSLOADERS = new HashMap<ClassLoader, ClassLoader>();
 
     /**
      * Load an instance of interceptor, and keep it singleton. Create {@link AgentClassLoader} for each
      * targetClassLoader, as an extend classloader. It can load interceptor classes from plugins, activations folders.
-     *
-     * @param className         the interceptor class, which is expected to be found
-     * @param targetClassLoader the class loader for current application context
+     * 需要使 加载 interceptorName 的类加载器作为 targetClassLoader 的子类加载器 可以达到互相访问
+     * 
+     * @param className         the interceptor class, which is expected to be found 插件中拦截器的全类名
+     * @param targetClassLoader the class loader for current application context 要想在插件拦截器中 能够访问到被拦截的类，需要是同一个类加载器 或 子类类加载器
+     *     targetClassLoader 就是 {@link org.apache.skywalking.apm.agent.SkyWalkingAgent.Transformer#transform} 中的 classLoader
      * @param <T>               expected type
      * @return the type reference.
      */
@@ -62,6 +66,16 @@ public class InterceptorInstanceLoader {
             try {
                 pluginLoader = EXTEND_PLUGIN_CLASSLOADERS.get(targetClassLoader);
                 if (pluginLoader == null) {
+                    /**
+                     * 正常来说 {@link org.apache.skywalking.apm.plugin.asf.dubbo.DubboInterceptor} 是由 AgentClassLoader 加载的
+                     * 所要拦截的方法是 {@link org.apache.dubbo.monitor.support.MonitorFilter#invoke} 是由 AppClassLoader 加载的
+                     * DubboInterceptor 看不到 MonitorFilter
+                     * 所以这里使得 pluginLoader 父加载器指向加载 当前拦截到的类 的类加载器，也就是 AppClassLoader
+                     * AgentClassLoader -parent-> AppClassLoader
+                     * 当前的拦截器就能看到父类的方法
+                     * 拦截到的类的类加载器是未知的，所以不能复用
+                     * 处理完字节码，还是交给拦截到的类的类加载器去加载
+                     */
                     pluginLoader = new AgentClassLoader(targetClassLoader);
                     EXTEND_PLUGIN_CLASSLOADERS.put(targetClassLoader, pluginLoader);
                 }

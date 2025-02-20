@@ -41,6 +41,7 @@ public class PluginResourcesResolver {
             /**
              * getResources(name) 方法内部会调用 AgentClassLoader 重写的 findResources 方法
              * {@link AgentClassLoader#findResources}
+             * 找到 plugins + activations 下面的所有 jar 包
              */
             urls = AgentClassLoader.getDefault().getResources("skywalking-plugin.def");
 

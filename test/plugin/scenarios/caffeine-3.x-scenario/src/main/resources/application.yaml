@@ -16,6 +16,4 @@
 #
 #
 server:
-  port: 8080
-  servlet:
-    context-path: /caffeine-3.x-scenario
+  port: 9000

@@ -56,7 +56,11 @@ public class TomcatInvokeInterceptor implements InstanceMethodsAroundInterceptor
         while (next.hasNext()) {
             next = next.next();
             next.setHeadValue(request.getHeader(next.getHeadKey()));
-        }
+        } // next: sw8-x: 0-
+        Enumeration<String> headerNames = request.getHeaderNames();
+        headerNames.asIterator().forEachRemaining(headerName -> {
+            System.out.println("my|tomcat|request.getHeader(headerName) = " + request.getHeader(headerName));
+        });
         String operationName =  String.join(":", request.getMethod(), request.getRequestURI());
         AbstractSpan span = ContextManager.createEntrySpan(operationName, contextCarrier);
         Tags.URL.set(span, request.getRequestURL().toString());

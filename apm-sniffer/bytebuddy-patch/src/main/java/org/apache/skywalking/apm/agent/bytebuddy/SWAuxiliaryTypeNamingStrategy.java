@@ -24,6 +24,7 @@ import net.bytebuddy.utility.RandomString;
 
 /**
  * Generate predicated auxiliary type name for delegate method.
+ * 生成委托方法的谓词辅助类型名称
  */
 public class SWAuxiliaryTypeNamingStrategy implements AuxiliaryType.NamingStrategy {
     private static final String DEFAULT_SUFFIX = "auxiliary$";

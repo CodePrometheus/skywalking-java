@@ -25,11 +25,13 @@ import net.bytebuddy.implementation.bind.annotation.Origin;
 import net.bytebuddy.implementation.bind.annotation.RuntimeType;
 import net.bytebuddy.implementation.bind.annotation.SuperCall;
 import net.bytebuddy.implementation.bind.annotation.This;
+import org.apache.skywalking.apm.agent.core.plugin.bootstrap.BootstrapInstrumentBoost;
 import org.apache.skywalking.apm.agent.core.plugin.bootstrap.IBootstrapLog;
 import org.apache.skywalking.apm.agent.core.plugin.interceptor.enhance.BootstrapInterRuntimeAssist;
 import org.apache.skywalking.apm.agent.core.plugin.interceptor.enhance.EnhancedInstance;
 import org.apache.skywalking.apm.agent.core.plugin.interceptor.enhance.InstanceMethodsAroundInterceptor;
 import org.apache.skywalking.apm.agent.core.plugin.interceptor.enhance.MethodInterceptResult;
+import org.apache.skywalking.apm.agent.core.plugin.loader.InterceptorInstanceLoader;
 import org.apache.skywalking.apm.agent.core.so11y.bootstrap.BootstrapPluginSo11y;
 
 /**
@@ -41,16 +43,24 @@ import org.apache.skywalking.apm.agent.core.so11y.bootstrap.BootstrapPluginSo11y
  * -------------------------------
  * <p>
  * This class wouldn't be loaded in real env. This is a class template for dynamic class generation.
+ * 
+ * javassist
+ * Dubbo @SPI
+ * stringBuilder.append("public class Deno{")
+ * ...
+ * stringBuilder.append("}")
  */
 public class InstanceMethodInterTemplate {
 
     private static final String INTERCEPTOR_TYPE = "inst";
     /**
      * This field is never set in the template, but has value in the runtime.
+     * {@link BootstrapInstrumentBoost#generateDelegator} 这里进行赋值 
      */
     private static String PLUGIN_NAME;
     /**
      * This field is never set in the template, but has value in the runtime.
+     * {@link BootstrapInstrumentBoost#generateDelegator} 这里进行赋值
      */
     private static String TARGET_INTERCEPTOR;
 
@@ -133,6 +143,11 @@ public class InstanceMethodInterTemplate {
 
     /**
      * Prepare the context. Link to the agent core in AppClassLoader.
+     * 模版和非模版的区别,多了一个 prepare 方法
+     * 1. 打通 BootstrapClassLoader 和 AgentClassLoader
+     *    - 拿到 ILog 生成日志对象
+     *    - 拿到插件自定义的拦截器实例
+     * 2. 代替非 JDK 核心类库插件运行逻辑里的 {@link InterceptorInstanceLoader#load}
      */
     private static void prepare() {
         if (INTERCEPTOR == null) {

@@ -53,6 +53,7 @@ import static net.bytebuddy.matcher.ElementMatchers.named;
 /**
  * If there is Bootstrap instrumentation plugin declared in plugin list, BootstrapInstrumentBoost inject the necessary
  * classes into bootstrap class loader, including generated dynamic delegate classes.
+ * 如果在插件列表中声明了 Bootstrap instrumentation 插件，则 BootstrapInstrumentBoost 将必要的类注入到bootstrap class loader中，包括生成的动态代理类
  */
 public class BootstrapInstrumentBoost {
     private static final ILog LOGGER = LogManager.getLogger(BootstrapInstrumentBoost.class);
@@ -100,8 +101,13 @@ public class BootstrapInstrumentBoost {
      */
     public static AgentBuilder inject(PluginFinder pluginFinder, Instrumentation instrumentation,
         AgentBuilder agentBuilder, JDK9ModuleExporter.EdgeClasses edgeClasses) throws PluginException {
+        // 所有要注入到 bootstrap class loader 中的类
         Map<String, byte[]> classesTypeMap = new LinkedHashMap<>();
 
+        // 针对目标类JDK核心类库的插件，根据插件的拦截点的不同(实例方法、构造方法、静态方法)
+        // 使用不同的模板，来定义新的拦截器的核心处理逻辑，并且将插件本身定义的拦截器的全类名
+        // 赋值给模板中的 TARGET_INTERCEPTOR 字段
+        // 最终这些新的拦截器的核心处理逻辑都会被放入 Bootstrap classloader 中
         if (!prepareJREInstrumentation(pluginFinder, classesTypeMap)) {
             return agentBuilder;
         }
@@ -127,11 +133,14 @@ public class BootstrapInstrumentBoost {
         /**
          * Inject the classes into bootstrap class loader by using Unsafe Strategy.
          * ByteBuddy adapts the sun.misc.Unsafe and jdk.internal.misc.Unsafe automatically.
+         * 将类注入到 bootstrap class loader 中，使用 Unsafe 策略
+         * ByteBuddy 会自动适配 sun.misc.Unsafe 和 jdk.internal.misc.Unsafe
          */
         ClassInjector.UsingUnsafe.Factory factory = ClassInjector.UsingUnsafe.Factory.resolve(instrumentation);
         factory.make(null, null).injectRaw(classesTypeMap);
         agentBuilder = agentBuilder.with(new AgentBuilder.InjectionStrategy.UsingUnsafe.OfFactory(factory));
 
+        System.out.println("my|BootstrapInstrumentBoost|inject classesTypeMap = " + classesTypeMap);
         return agentBuilder;
     }
 
@@ -147,6 +156,7 @@ public class BootstrapInstrumentBoost {
 
     /**
      * Load the delegate class from current class loader, mostly should be AppClassLoader.
+     * 这里就能找到了，因为在上面的 inject 方法中，已经将这些类注入到了 Bootstrap class loader 中
      *
      * @param methodsInterceptor of original interceptor in the plugin
      * @return generated delegate class
@@ -170,7 +180,10 @@ public class BootstrapInstrumentBoost {
     private static boolean prepareJREInstrumentation(PluginFinder pluginFinder,
         Map<String, byte[]> classesTypeMap) throws PluginException {
         TypePool typePool = TypePool.Default.of(BootstrapInstrumentBoost.class.getClassLoader());
+        // 对 JDK 类库的插件
         List<AbstractClassEnhancePluginDefine> bootstrapClassMatchDefines = pluginFinder.getBootstrapClassMatchDefine();
+        
+        // 只处理 JDK 类库的类 实例 + 构造 + 静态方法
         for (AbstractClassEnhancePluginDefine define : bootstrapClassMatchDefines) {
             if (Objects.nonNull(define.getInstanceMethodsInterceptPoints())) {
                 for (InstanceMethodsInterceptPoint point : define.getInstanceMethodsInterceptPoints()) {
@@ -260,16 +273,24 @@ public class BootstrapInstrumentBoost {
      * Generate the delegator class based on given template class. This is preparation stage level code generation.
      * <p>
      * One key step to avoid class confliction between AppClassLoader and BootstrapClassLoader
+     * 生成基于给定模板类的代理类。这是准备阶段级别的代码生成。
+     * 避免 AppClassLoader 和 BootstrapClassLoader 之间的类冲突的一个关键步骤
+     * <p>
+     * 把 template 文件交给 Bytebuddy 编译成字节码，并且重新命名，将 TARGET_INTERCEPTOR 赋值，再组装进 Map
      *
      * @param classesTypeMap    hosts injected binary of generated class
      * @param typePool          to generate new class
      * @param templateClassName represents the class as template in this generation process. The templates are
      *                          pre-defined in SkyWalking agent core.
+     * @param methodsInterceptor 比如就是 {@link org.apache.skywalking.apm.plugin.asf.dubbo.DubboInterceptor}
      */
     private static void generateDelegator(Map<String, byte[]> classesTypeMap, TypePool typePool,
         String pluginName, String templateClassName, String methodsInterceptor) {
+        // methodsInterceptor+_internal 字符串拼接
         String internalInterceptorName = internalDelegate(methodsInterceptor);
         try {
+            // ClassLoaderA 已经加载了 100 个类，但是在这个 ClassLoader 的 classpath 下有 200 个类
+            // 那么 typePool.describe 可以拿到当前 ClassLoader 的 classpath 下还没有加载的类的定义(描述)
             TypeDescription templateTypeDescription = typePool.describe(templateClassName).resolve();
 
             DynamicType.Unloaded interceptorType = new ByteBuddy().redefine(templateTypeDescription, ClassFileLocator.ForClassLoader
@@ -279,9 +300,9 @@ public class BootstrapInstrumentBoost {
                                                                   .value(pluginName)
                                                                   .field(named("TARGET_INTERCEPTOR"))
                                                                   .value(methodsInterceptor)
-                                                                  .make();
+                                                                  .make(); // 没有调用 load()
 
-            classesTypeMap.put(internalInterceptorName, interceptorType.getBytes());
+            classesTypeMap.put(internalInterceptorName, interceptorType.getBytes()); // 获取字节码
 
             InstrumentDebuggingClass.INSTANCE.log(interceptorType);
         } catch (Exception e) {
@@ -292,6 +313,7 @@ public class BootstrapInstrumentBoost {
     /**
      * The class loaded by this method means it only should be loaded once in Bootstrap classloader, when bootstrap
      * instrumentation active by any plugin
+     * 此方法加载的类意味着只应在 Bootstrap 类加载器中加载一次，当任何插件激活时
      *
      * @param loadedTypeMap hosts all injected class
      * @param className     to load

@@ -291,7 +291,7 @@ public class TracingContext implements AbstractTracerContext {
         AbstractSpan entrySpan;
         TracingContext owner = this;
         final AbstractSpan parentSpan = peek(); // 弹出一个 span 作为要创建的这个 span 的 parent
-        final int parentSpanId = parentSpan == null ? -1 : parentSpan.getSpanId();
+        final int parentSpanId = parentSpan == null ? -1 : parentSpan.getSpanId(); // 本身是第一个 parentSpanId = 1
         if (parentSpan != null && parentSpan.isEntry()) { // 复用逻辑
             /*
              * Only add the profiling recheck on creating entry span,
@@ -323,9 +323,9 @@ public class TracingContext implements AbstractTracerContext {
             NoopSpan span = new NoopSpan();
             return push(span);
         }
-        AbstractSpan parentSpan = peek();
+        AbstractSpan parentSpan = peek(); // 把上一个 span 弹出来作为 parentSpan 如 tomcat 的 entrySpan
         final int parentSpanId = parentSpan == null ? -1 : parentSpan.getSpanId();
-        AbstractTracingSpan span = new LocalSpan(spanIdGenerator++, parentSpanId, operationName, this);
+        AbstractTracingSpan span = new LocalSpan(spanIdGenerator++, parentSpanId, operationName, this); // spanIdGenerator++ 作为该 span 自己的 spanId
         span.start();
         return push(span);
     }
@@ -367,7 +367,7 @@ public class TracingContext implements AbstractTracerContext {
      */
     @Override
     public AbstractSpan activeSpan() {
-        AbstractSpan span = peek();
+        AbstractSpan span = peek(); // 栈顶代表当前活跃 span，也就是最近入栈的 span
         if (span == null) {
             throw new IllegalStateException("No active span.");
         }
@@ -388,7 +388,7 @@ public class TracingContext implements AbstractTracerContext {
             if (lastSpan instanceof AbstractTracingSpan) {
                 AbstractTracingSpan toFinishSpan = (AbstractTracingSpan) lastSpan;
                 if (toFinishSpan.finish(segment)) { // 要让 stackDepth 这些数据变动起来
-                    pop();
+                    pop(); // activeSpanStack.removeLast()
                 }
             } else {
                 pop();
@@ -562,7 +562,7 @@ public class TracingContext implements AbstractTracerContext {
      * @param span the {@code span} to push
      */
     private AbstractSpan push(AbstractSpan span) {
-        if (primaryEndpoint == null) {
+        if (primaryEndpoint == null) { // 第一次创建为 null
             primaryEndpoint = new PrimaryEndpoint(span);
         } else {
             primaryEndpoint.set(span);
@@ -583,7 +583,7 @@ public class TracingContext implements AbstractTracerContext {
     }
 
     private boolean isLimitMechanismWorking() {
-        if (spanIdGenerator >= spanLimitWatcher.getSpanLimit()) {
+        if (spanIdGenerator >= spanLimitWatcher.getSpanLimit()) { // default 300
             long currentTimeMillis = System.currentTimeMillis();
             if (currentTimeMillis - lastWarningTimestamp > 30 * 1000) {
                 LOGGER.warn(

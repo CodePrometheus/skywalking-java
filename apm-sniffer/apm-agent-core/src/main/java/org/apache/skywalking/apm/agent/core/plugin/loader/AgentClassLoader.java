@@ -115,7 +115,11 @@ public class AgentClassLoader extends ClassLoader {
                 if (DEFAULT_LOADER == null) {
                     // PluginBootstrap 调用该方法的时候，PluginBootstrap 已经被加载了
                     // 将 PluginBootstrap 作为父类加载器
-                    DEFAULT_LOADER = new AgentClassLoader(PluginBootstrap.class.getClassLoader());
+                    ClassLoader classLoader = PluginBootstrap.class.getClassLoader();
+                    // my|AgentClassLoader|initDefaultLoader classLoader = jdk.internal.loader.ClassLoaders$AppClassLoader@2aae9190
+                    // parent = jdk.internal.loader.ClassLoaders$PlatformClassLoader@367ffa75
+                    System.out.println("my|AgentClassLoader|initDefaultLoader classLoader = " + classLoader + ",parent = " + classLoader.getParent());
+                    DEFAULT_LOADER = new AgentClassLoader(classLoader);
                 }
             }
         }

@@ -24,6 +24,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class Application {
 
+    /**
+     -javaagent:/Users/zhouzixin/sw-framework/skywalking-java/skywalking-agent/skywalking-agent.jar
+     */
     public static void main(String[] args) {
         SpringApplication.run(Application.class, args);
     }

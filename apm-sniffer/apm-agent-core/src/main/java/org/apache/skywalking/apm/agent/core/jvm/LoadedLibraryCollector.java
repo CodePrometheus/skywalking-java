@@ -84,6 +84,7 @@ public class LoadedLibraryCollector {
 
     private static List<String> getLibJarNames() {
         List<URL> classLoaderUrls = loadClassLoaderUrls();
+        System.out.println("my|LoadedLibraryCollector|getLibJarNames classLoaderUrls = " + classLoaderUrls);
         return extractLibJarNamesFromURLs(classLoaderUrls);
     }
 
@@ -118,6 +119,7 @@ public class LoadedLibraryCollector {
             sortedLibJarNames.addAll(libJarNames);
             Collections.sort(sortedLibJarNames);
         }
+        System.out.println("my|LoadedLibraryCollector|extractLibJarNamesFromURLs sortedLibJarNames = " + sortedLibJarNames);
         return sortedLibJarNames;
     }
 

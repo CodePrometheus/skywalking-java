@@ -49,7 +49,7 @@ public class ContextManager implements BootService {
 
     private static AbstractTracerContext getOrCreate(String operationName, boolean forceSampling) {
         AbstractTracerContext context = CONTEXT.get();
-        if (context == null) {
+        if (context == null) {  // 第一个为 null
             if (StringUtil.isEmpty(operationName)) {
                 if (LOGGER.isDebugEnable()) {
                     LOGGER.debug("No operation name, ignore this trace.");
@@ -108,7 +108,7 @@ public class ContextManager implements BootService {
     public static AbstractSpan createEntrySpan(String operationName, ContextCarrier carrier) {
         AbstractSpan span;
         AbstractTracerContext context;
-        operationName = StringUtil.cut(operationName, OPERATION_NAME_THRESHOLD);
+        operationName = StringUtil.cut(operationName, OPERATION_NAME_THRESHOLD); // 1. GET:/get/1
         if (carrier != null && carrier.isValid()) {
             SamplingService samplingService = ServiceManager.INSTANCE.findService(SamplingService.class);
             samplingService.forceSampled();
@@ -207,7 +207,7 @@ public class ContextManager implements BootService {
      * only could get by low-performance way, this stop way is still acceptable.
      */
     public static void stopSpan() {
-        final AbstractTracerContext context = get();
+        final AbstractTracerContext context = get(); // 拿到 ThreadLocal 里面全部的 context
         stopSpan(context.activeSpan(), context);
     }
 

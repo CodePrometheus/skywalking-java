@@ -38,10 +38,11 @@ public class BootstrapInterRuntimeAssist {
 
     public static ClassLoader getAgentClassLoader() {
         try {
-            ClassLoader loader = Thread.currentThread().getContextClassLoader();
+            ClassLoader loader = Thread.currentThread().getContextClassLoader(); // getContextClassLoader 这个机制详见笔记
             if (loader == null) {
                 return null;
             }
+            // 当前类的 ClassLoader 来加载 AgentClassLoader
             Class<?> agentClassLoaderClass = Class.forName(AGENT_CLASSLOADER_DEFAULT, true, loader);
             Field defaultLoaderField = agentClassLoaderClass.getDeclaredField(DEFAULT_AGENT_CLASSLOADER_INSTANCE);
             defaultLoaderField.setAccessible(true);
@@ -58,7 +59,7 @@ public class BootstrapInterRuntimeAssist {
         try {
             Class<?> logManagerClass = Class.forName(LOG_MANAGER_CLASS, true, defaultAgentClassLoader);
             Method getLogger = logManagerClass.getMethod(LOG_MANAGER_GET_LOGGER_METHOD, String.class);
-            return (IBootstrapLog) getLogger.invoke(null, interceptor + "_internal");
+            return (IBootstrapLog) getLogger.invoke(null, interceptor + "_internal"); // 因为类名已经被替换了
         } catch (Exception e) {
             e.printStackTrace(OUT);
             return null;

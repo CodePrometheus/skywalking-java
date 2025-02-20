@@ -58,8 +58,8 @@ public class AgentSo11y {
     private static Histogram INTERCEPTOR_TIME_COST;
 
     public static void measureTracingContextCreation(boolean forceSampling, boolean ignoredTracingContext) {
-        if (forceSampling) {
-            if (ignoredTracingContext) {
+        if (forceSampling) { // 强制采样
+            if (ignoredTracingContext) { // 忽略该 trace
                 if (PROPAGATED_IGNORE_CONTEXT_COUNTER == null) {
                     PROPAGATED_IGNORE_CONTEXT_COUNTER = MeterFactory
                         .counter("created_ignored_context_counter")
@@ -76,8 +76,8 @@ public class AgentSo11y {
                 }
                 PROPAGATED_CONTEXT_COUNTER.increment(1);
             }
-        } else {
-            if (ignoredTracingContext) {
+        } else { // 非强制采样
+            if (ignoredTracingContext) { // 忽略该 trace
                 if (SAMPLER_IGNORE_CONTEXT_COUNTER == null) {
                     SAMPLER_IGNORE_CONTEXT_COUNTER = MeterFactory
                         .counter("created_ignored_context_counter")

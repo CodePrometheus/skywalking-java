@@ -38,9 +38,12 @@ public enum InstrumentDebuggingClass {
     private File debuggingClassesRootPath;
 
     public void log(DynamicType dynamicType) {
-        if (!Config.Agent.IS_OPEN_DEBUGGING_CLASS) {
-            return;
-        }
+        // System.out.println("my|Config.Agent.IS_OPEN_DEBUGGING_CLASS = " + Config.Agent.IS_OPEN_DEBUGGING_CLASS);
+        // if (!Config.Agent.IS_OPEN_DEBUGGING_CLASS) {
+        //     System.out.println("my|Config.Agent.IS_OPEN_DEBUGGING_CLASS is false, return");
+        //     return;
+        // }
+        System.out.println("my|begin to create /debugging for debug");
 
         /**
          * try to do I/O things in synchronized way, to avoid unexpected situations.
@@ -53,6 +56,7 @@ public enum InstrumentDebuggingClass {
                         if (!debuggingClassesRootPath.exists()) {
                             debuggingClassesRootPath.mkdir();
                         }
+                        System.out.println("my|debuggingClassesRootPath = " + debuggingClassesRootPath);
                     } catch (AgentPackageNotFoundException e) {
                         LOGGER.error(e, "Can't find the root path for creating /debugging folder.");
                     }

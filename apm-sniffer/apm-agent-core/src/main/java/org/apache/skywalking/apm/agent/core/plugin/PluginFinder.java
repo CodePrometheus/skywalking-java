@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
 import net.bytebuddy.description.NamedElement;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.matcher.ElementMatcher;
@@ -39,11 +40,13 @@ import static net.bytebuddy.matcher.ElementMatchers.not;
  * The <code>PluginFinder</code> represents a finder , which assist to find the one from the given {@link
  * AbstractClassEnhancePluginDefine} list.
  */
+@Getter
 public class PluginFinder {
     /**
      * 之所以 Map 的 value 是一个 List
      * 是因为对于同一个类，可能有多个插件都要对其进行字节码增强
      */
+    // key=目标类, value=所有可以对这个目标生效的插件
     private final Map<String, LinkedList<AbstractClassEnhancePluginDefine>> nameMatchDefine = new HashMap<String, LinkedList<AbstractClassEnhancePluginDefine>>(); // 基于类名匹配的
     private final List<AbstractClassEnhancePluginDefine> signatureMatchDefine = new ArrayList<AbstractClassEnhancePluginDefine>(); // 间接匹配的
     private final List<AbstractClassEnhancePluginDefine> bootstrapClassMatchDefine = new ArrayList<AbstractClassEnhancePluginDefine>(); // 对 jdk 类库做字节码修改的插件
@@ -56,7 +59,7 @@ public class PluginFinder {
      */
     public PluginFinder(List<AbstractClassEnhancePluginDefine> plugins) {
         for (AbstractClassEnhancePluginDefine plugin : plugins) {
-            ClassMatch match = plugin.enhanceClass();
+            ClassMatch match = plugin.enhanceClass(); // ClassMatch 类匹配的方法
 
             if (match == null) {
                 continue;
@@ -88,7 +91,7 @@ public class PluginFinder {
      * 1. 从命名插件里找
      * 2. 从间接匹配插件里找
      *
-     * @param typeDescription 当做是 class
+     * @param typeDescription 指定一个类
      * @return
      */
     public List<AbstractClassEnhancePluginDefine> find(TypeDescription typeDescription) {

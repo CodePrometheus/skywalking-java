@@ -54,6 +54,7 @@ public class JDK9ModuleExporter {
         EdgeClasses classes) {
         // EdgeClasses
         for (String className : classes.classes) {
+            System.out.println("my|JDK9ModuleExporter|openReadEdge className = " + className);
             try {
                 agentBuilder = agentBuilder.assureReadEdgeFromAndTo(instrumentation, Class.forName(className));
             } catch (ClassNotFoundException e) {

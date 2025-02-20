@@ -74,10 +74,10 @@ public class ContextCarrier implements Serializable {
      * @return the list of items, which could exist in the current tracing context.
      */
     public CarrierItem items() {
-        SW8ExtensionCarrierItem sw8ExtensionCarrierItem = new SW8ExtensionCarrierItem(extensionContext, null);
+        SW8ExtensionCarrierItem sw8ExtensionCarrierItem = new SW8ExtensionCarrierItem(extensionContext, null); // sw8-x 0- 
         SW8CorrelationCarrierItem sw8CorrelationCarrierItem = new SW8CorrelationCarrierItem(
-            correlationContext, sw8ExtensionCarrierItem);
-        SW8CarrierItem sw8CarrierItem = new SW8CarrierItem(this, sw8CorrelationCarrierItem);
+            correlationContext, sw8ExtensionCarrierItem); // sw8-correlation ""
+        SW8CarrierItem sw8CarrierItem = new SW8CarrierItem(this, sw8CorrelationCarrierItem); // sw8 ""
         return new CarrierItemHead(sw8CarrierItem);
     }
 

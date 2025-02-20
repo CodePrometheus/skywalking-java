@@ -101,8 +101,17 @@ public class SkyWalkingAgent {
         }
 
         try {
-            // 2.加载插件
+            // 2.加载插件 + 插件分类
             pluginFinder = new PluginFinder(new PluginBootstrap().loadPlugins());
+            // pluginFinder.getNameMatchDefine().forEach((k, v) -> {
+            //     System.out.println("my|nameMatchDefine k = " + k + ", v = " + v);
+            // });
+            // pluginFinder.getSignatureMatchDefine().forEach(v -> {
+            //     System.out.println("my|signatureMatchDefine v = " + v);
+            // });
+            // pluginFinder.getBootstrapClassMatchDefine().forEach(v -> {
+            //     System.out.println("my|bootstrapClassMatchDefine v = " + v);
+            // });
         } catch (AgentPackageNotFoundException ape) {
             LOGGER.error(ape, "Locate agent.jar failure. Shutting down.");
             return;
@@ -112,6 +121,7 @@ public class SkyWalkingAgent {
         }
 
         try {
+            // 插桩
             installClassTransformer(instrumentation, pluginFinder);
         } catch (Exception e) {
             LOGGER.error(e, "Skywalking agent installed class transformer failure.");
@@ -183,7 +193,7 @@ public class SkyWalkingAgent {
     private static AgentBuilder newAgentBuilder() {
         final ByteBuddy byteBuddy = new ByteBuddy()
                 .with(TypeValidation.of(Config.Agent.IS_OPEN_DEBUGGING_CLASS))
-                .with(new SWAuxiliaryTypeNamingStrategy(NAME_TRAIT))
+                .with(new SWAuxiliaryTypeNamingStrategy(NAME_TRAIT)) // com.example.MyClass -> com.example.MyClass$sw$auxiliary$(auxiliary_type_instance_hash)
                 .with(new SWImplementationContextFactory(NAME_TRAIT))
                 .with(new SWMethodGraphCompilerDelegate(MethodGraph.Compiler.DEFAULT));
 
@@ -200,7 +210,7 @@ public class SkyWalkingAgent {
 
         @Override
         public DynamicType.Builder<?> transform(final DynamicType.Builder<?> builder, // 当前拦截到的类的字节码
-                                                final TypeDescription typeDescription, // 简单当成了 Class，包含了类的描述信息
+                                                final TypeDescription typeDescription, // 简单当成 Class，包含了类的描述信息
                                                 final ClassLoader classLoader, // 加载 当前拦截到的类 的类加载器
                                                 final JavaModule javaModule, // Java9
                                                 final ProtectionDomain protectionDomain) {

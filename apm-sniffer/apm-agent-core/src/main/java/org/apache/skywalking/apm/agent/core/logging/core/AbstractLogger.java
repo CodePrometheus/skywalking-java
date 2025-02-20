@@ -138,7 +138,7 @@ public abstract class AbstractLogger implements ILog {
 
     @Override
     public boolean isDebugEnable() {
-        return LogLevel.DEBUG.compareTo(Config.Logging.LEVEL) >= 0;
+        return true;
     }
 
     @Override

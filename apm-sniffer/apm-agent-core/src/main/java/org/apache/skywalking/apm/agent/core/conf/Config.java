@@ -108,7 +108,7 @@ public class Config {
          * If true, SkyWalking agent will save all instrumented classes files in `/debugging` folder. SkyWalking team
          * may ask for these files in order to resolve compatible problem.
          */
-        public static boolean IS_OPEN_DEBUGGING_CLASS = false;
+        public static boolean IS_OPEN_DEBUGGING_CLASS = true; // for debug I set it to true
 
         /**
          * The identifier of the instance

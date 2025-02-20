@@ -25,9 +25,9 @@ import org.apache.skywalking.apm.commons.datacarrier.common.AtomicRangeInteger;
  * Self implementation ring queue.
  */
 public class Buffer<T> implements QueueBuffer<T> {
-    private final Object[] buffer;
-    private BufferStrategy strategy;
-    private AtomicRangeInteger index;
+    private final Object[] buffer; // 队列数据都存储到数组中
+    private BufferStrategy strategy; // 队列满时的处理策略
+    private AtomicRangeInteger index; // 索引
 
     Buffer(int bufferSize, BufferStrategy strategy) {
         buffer = new Object[bufferSize];
