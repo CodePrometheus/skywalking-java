@@ -31,7 +31,7 @@ public class MultipleChannelsConsumer extends Thread {
     private volatile boolean running;
     private volatile ArrayList<Group> consumeTargets;
     @SuppressWarnings("NonAtomicVolatileUpdate")
-    private volatile long size;
+    private volatile long size; // buffer总数
     private final long consumeCycle;
 
     public MultipleChannelsConsumer(String threadName, long consumeCycle) {

@@ -130,6 +130,7 @@ public class TraceSegmentServiceClient implements BootService, IConsumer<TraceSe
 
             upstreamSegmentStreamObserver.onCompleted();
 
+            // 强制等待所有的 TraceSegment 都发送完成
             status.wait4Finish();
             segmentUplinkedCounter += data.size();
         } else {

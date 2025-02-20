@@ -27,7 +27,7 @@ public class ConsumerThread<T> extends Thread {
     private volatile boolean running;
     private IConsumer<T> consumer;
     private List<DataSource> dataSources;
-    private long consumeCycle;
+    private long consumeCycle; // 本次消费没有取到数据时，线程 sleep 的时间
 
     ConsumerThread(String threadName, IConsumer<T> consumer, long consumeCycle) {
         super(threadName);
@@ -67,7 +67,7 @@ public class ConsumerThread<T> extends Thread {
 
     private boolean consume(List<T> consumeList) {
         for (DataSource dataSource : dataSources) {
-            dataSource.obtain(consumeList);
+            dataSource.obtain(consumeList); // 数据放入 consumeList
         }
 
         if (!consumeList.isEmpty()) {

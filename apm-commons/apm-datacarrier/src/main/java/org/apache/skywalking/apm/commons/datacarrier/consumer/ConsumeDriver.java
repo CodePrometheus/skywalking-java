@@ -25,6 +25,7 @@ import org.apache.skywalking.apm.commons.datacarrier.buffer.Channels;
 
 /**
  * Pool of consumers <p> Created by wusheng on 2016/10/25.
+ * 一堆消费者线程拿着一堆 buffer，按 allocateBuffer2Thread 策略进行分配消费
  */
 public class ConsumeDriver<T> implements IDriver {
     private volatile boolean running;
@@ -109,6 +110,8 @@ public class ConsumeDriver<T> implements IDriver {
     private void allocateBuffer2Thread() {
         int channelSize = this.channels.getChannelSize();
         /**
+         * 因为 channels 里面有很多 buffer，同时这里也有很多消费者线程
+         * 这一步的操作就是将这些 buffer 分配给不同的消费者线程去消费
          * if consumerThreads.length < channelSize
          * each consumer will process several channels.
          *
